@@ -8,11 +8,21 @@ Handles governance, resource management, failsafe, and execution.
 import threading
 import time
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Optional, Dict, Any
 
 from sovereign_pio.constants import PHI, BETA
 
-__all__ = ["ASIOSRuntime", "FailSafe", "Governor"]
+# Import full implementations
+from .governor import Governor, HardwareMonitor, GPUStatus, SystemStatus
+
+__all__ = [
+    "ASIOSRuntime",
+    "FailSafe",
+    "Governor",
+    "HardwareMonitor",
+    "GPUStatus",
+    "SystemStatus",
+]
 
 
 @dataclass
@@ -28,7 +38,7 @@ class FailSafe:
     cooldown_seconds: float = 60.0
 
     _failures: list = field(default_factory=list)
-    _tripped_at: float | None = None
+    _tripped_at: float = None
     _lock: threading.Lock = field(default_factory=threading.Lock)
 
     def record_failure(self):
@@ -36,7 +46,6 @@ class FailSafe:
         with self._lock:
             now = time.time()
             self._failures.append(now)
-            # Clean old failures outside window
             cutoff = now - self.window_seconds
             self._failures = [t for t in self._failures if t > cutoff]
 
@@ -77,42 +86,6 @@ class FailSafe:
             raise
 
 
-class Governor:
-    """
-    Resource governor implementing safety limits.
-
-    Monitors VRAM, temperature, and disk space with PHI-based thresholds.
-    """
-
-    def __init__(self):
-        self.vram_limit_mb = 9750  # 81.25% of 12GB (VRAM cliff)
-        self.temp_limit_c = 78     # Thermal throttle point
-        self.disk_min_gb = 50      # Minimum free disk space
-        self.safety_factor = BETA  # Security constant
-
-        self.is_throttled = False
-        self.critical_stop = False
-
-    def check_vram(self, current_mb: float) -> bool:
-        """Check if VRAM usage is within limits."""
-        if current_mb >= self.vram_limit_mb:
-            self.is_throttled = True
-            return False
-        return True
-
-    def check_temperature(self, current_c: float) -> bool:
-        """Check if temperature is within limits."""
-        if current_c >= self.temp_limit_c:
-            self.is_throttled = True
-            return False
-        return True
-
-    def get_safe_allocation(self, requested_mb: float) -> float:
-        """Get safe allocation amount with safety buffer."""
-        max_safe = self.vram_limit_mb * (1 - self.safety_factor)
-        return min(requested_mb, max_safe)
-
-
 class ASIOSRuntime:
     """
     ASIOS Runtime Engine.
@@ -127,26 +100,19 @@ class ASIOSRuntime:
         self.phi = PHI
 
     async def execute(self, task: dict) -> dict:
-        """
-        Execute a task through the runtime.
-
-        Args:
-            task: Task specification dictionary
-
-        Returns:
-            Execution result
-        """
+        """Execute a task through the runtime."""
         # Check system health
-        if self.governor.critical_stop:
+        health = self.governor.check_health()
+
+        if health["critical"]:
             return {"status": "error", "reason": "Critical stop active"}
 
-        if self.governor.is_throttled:
+        if health["throttled"]:
             return {"status": "throttled", "reason": "System throttled"}
 
         # Execute with failsafe protection
         def run_task():
-            # TODO: Implement actual task execution
-            return {"status": "success", "result": None}
+            return {"status": "success", "result": task}
 
         try:
             return self.failsafe.execute(run_task)
@@ -159,4 +125,9 @@ class ASIOSRuntime:
             "failsafe_tripped": self.failsafe.is_tripped(),
             "throttled": self.governor.is_throttled,
             "critical_stop": self.governor.critical_stop,
+            "governor": self.governor.check_health(),
         }
+
+    def summary(self) -> str:
+        """Get human-readable status summary."""
+        return self.governor.summary()

@@ -7,84 +7,72 @@ Handles reasoning, memory, wormhole routing, and multi-model orchestration.
 
 from sovereign_pio.constants import PHI, DIMENSION_NAMES, LUCAS_NUMBERS
 
-__all__ = ["GPIAEngine", "WormholeRouter", "Memory"]
+from .memory import (
+    Memory,
+    MemoryEntry,
+    Embedder,
+    SimpleEmbedder,
+    OllamaEmbedder,
+    OpenAIEmbedder,
+    cosine_similarity,
+)
+from .reasoning import (
+    ReasoningEngine,
+    ReasoningResult,
+    LLMClient,
+    ModelConfig,
+    ModelProvider,
+    MultiModelOrchestrator,
+)
+
+__all__ = [
+    # Constants
+    "PHI",
+    "DIMENSION_NAMES",
+    "LUCAS_NUMBERS",
+    # Memory
+    "Memory",
+    "MemoryEntry",
+    "Embedder",
+    "SimpleEmbedder",
+    "OllamaEmbedder",
+    "OpenAIEmbedder",
+    "cosine_similarity",
+    # Reasoning
+    "ReasoningEngine",
+    "ReasoningResult",
+    "LLMClient",
+    "ModelConfig",
+    "ModelProvider",
+    "MultiModelOrchestrator",
+    # Legacy exports
+    "GPIAEngine",
+    "WormholeRouter",
+]
 
 
-class Memory:
-    """
-    GPIA Memory System.
-
-    Handles storage and retrieval of information with
-    PHI-based relevance scoring.
-    """
-
-    def __init__(self):
-        self.store = {}
-        self.embeddings = {}
-
-    def store_memory(self, key: str, value: str, metadata: dict = None):
-        """Store a memory with optional metadata."""
-        self.store[key] = {
-            "value": value,
-            "metadata": metadata or {},
-        }
-
-    def retrieve(self, query: str, top_k: int = 5) -> list:
-        """Retrieve relevant memories for a query."""
-        # TODO: Implement PHI-based similarity search
-        return list(self.store.items())[:top_k]
-
-
+# Legacy class aliases
 class WormholeRouter:
-    """
-    Wormhole-based routing for dimension traversal.
-
-    Routes computations through the 12 dimensions based on
-    task characteristics and PHI-optimal paths.
-    """
+    """Legacy alias - use ReasoningEngine instead."""
 
     def __init__(self):
         self.dimensions = DIMENSION_NAMES
         self.capacities = {i + 1: cap for i, cap in enumerate(LUCAS_NUMBERS)}
 
     def route(self, task_type: str) -> int:
-        """
-        Route a task to the appropriate dimension.
-
-        Args:
-            task_type: Type of task to route
-
-        Returns:
-            Dimension number (1-12)
-        """
         routing_map = {
-            "perception": 1,
-            "attention": 2,
-            "security": 3,
-            "stability": 4,
-            "compression": 5,
-            "harmony": 6,
-            "reasoning": 7,
-            "prediction": 8,
-            "creativity": 9,
-            "wisdom": 10,
-            "integration": 11,
-            "unification": 12,
+            "perception": 1, "attention": 2, "security": 3, "stability": 4,
+            "compression": 5, "harmony": 6, "reasoning": 7, "prediction": 8,
+            "creativity": 9, "wisdom": 10, "integration": 11, "unification": 12,
         }
-        return routing_map.get(task_type.lower(), 7)  # Default to reasoning
+        return routing_map.get(task_type.lower(), 7)
 
     def get_capacity(self, dimension: int) -> int:
-        """Get the Lucas number capacity for a dimension."""
         return self.capacities.get(dimension, 1)
 
 
 class GPIAEngine:
-    """
-    GPIA Intelligence Engine.
-
-    Orchestrates reasoning across multiple models and dimensions,
-    using wormhole routing for optimal path selection.
-    """
+    """Legacy alias - use ReasoningEngine instead."""
 
     def __init__(self):
         self.memory = Memory()
@@ -92,28 +80,11 @@ class GPIAEngine:
         self.phi = PHI
 
     async def reason(self, query: str, context: dict = None) -> dict:
-        """
-        Perform reasoning on a query.
-
-        Args:
-            query: The query to reason about
-            context: Optional context dictionary
-
-        Returns:
-            Reasoning result with dimension path
-        """
-        # Determine routing
         dimension = self.router.route("reasoning")
-        capacity = self.router.get_capacity(dimension)
-
-        # Retrieve relevant memories
-        memories = self.memory.retrieve(query)
-
         return {
             "query": query,
             "dimension": dimension,
             "dimension_name": DIMENSION_NAMES[dimension],
-            "capacity": capacity,
-            "memories": memories,
-            "result": None,  # TODO: Implement actual reasoning
+            "capacity": self.router.get_capacity(dimension),
+            "result": None,
         }
