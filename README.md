@@ -11,8 +11,6 @@
 
 Sovereign PIO (Personal Intelligent Operator) is an autonomous agent architecture that bridges high-level AI operations with hardware through mathematical transformations based on the golden ratio (φ). The system implements a complete OS-like abstraction layer with 20 extensions providing kernel, memory, filesystem, drivers, and wormhole-based routing capabilities.
 
-**Live Site**: [http://cloudhabil.com/](http://cloudhabil.com/)
-
 ## Key Statistics
 
 | Metric | Value |
