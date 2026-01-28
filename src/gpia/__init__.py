@@ -1,12 +1,21 @@
 """
-GPIA - Intelligence & Reasoning Engine
+GPIA - General Purpose Intelligence Architecture
 
 The intelligence layer of Sovereign PIO.
 Handles reasoning, memory, wormhole routing, and multi-model orchestration.
+
+Components:
+- Memory: Embedding-based semantic storage
+- Reasoning: LLM integration with dimension routing
+- Dense State: Sphere-based context retrieval
+- Causal Linker: Hidden connection discovery
+- Ignorance: Knowledge gap cartography
+- Memory Spheres: Dynamic mitosis/meiosis rebalancing
 """
 
 from sovereign_pio.constants import PHI, DIMENSION_NAMES, LUCAS_NUMBERS
 
+# Memory
 from .memory import (
     Memory,
     MemoryEntry,
@@ -16,6 +25,8 @@ from .memory import (
     OpenAIEmbedder,
     cosine_similarity,
 )
+
+# Reasoning
 from .reasoning import (
     ReasoningEngine,
     ReasoningResult,
@@ -23,6 +34,39 @@ from .reasoning import (
     ModelConfig,
     ModelProvider,
     MultiModelOrchestrator,
+)
+
+# Dense State
+from .dense_state import (
+    DenseStateMemory,
+    MemorySphere,
+    RetrievalResult,
+    RESONANCE_THRESHOLD,
+)
+
+# Causal Linker
+from .causal_linker import (
+    CausalLinker,
+    CausalLink,
+    NeutrinoString,
+)
+
+# Ignorance Cartography
+from .ignorance import (
+    IgnoranceCartographer,
+    IgnorancePoint,
+    IgnoranceType,
+    DarkSector,
+    N4Boundary,
+    APERTURE,
+    GENESIS,
+)
+
+# Memory Spheres
+from .memory_spheres import (
+    MemorySphereManager,
+    Sphere,
+    MemoryItem,
 )
 
 __all__ = [
@@ -45,16 +89,36 @@ __all__ = [
     "ModelConfig",
     "ModelProvider",
     "MultiModelOrchestrator",
-    # Legacy exports
+    # Dense State
+    "DenseStateMemory",
+    "MemorySphere",
+    "RetrievalResult",
+    "RESONANCE_THRESHOLD",
+    # Causal Linker
+    "CausalLinker",
+    "CausalLink",
+    "NeutrinoString",
+    # Ignorance
+    "IgnoranceCartographer",
+    "IgnorancePoint",
+    "IgnoranceType",
+    "DarkSector",
+    "N4Boundary",
+    "APERTURE",
+    "GENESIS",
+    # Memory Spheres
+    "MemorySphereManager",
+    "Sphere",
+    "MemoryItem",
+    # Legacy
     "GPIAEngine",
     "WormholeRouter",
 ]
 
 
-# Legacy class aliases
+# Legacy aliases
 class WormholeRouter:
     """Legacy alias - use ReasoningEngine instead."""
-
     def __init__(self):
         self.dimensions = DIMENSION_NAMES
         self.capacities = {i + 1: cap for i, cap in enumerate(LUCAS_NUMBERS)}
@@ -73,7 +137,6 @@ class WormholeRouter:
 
 class GPIAEngine:
     """Legacy alias - use ReasoningEngine instead."""
-
     def __init__(self):
         self.memory = Memory()
         self.router = WormholeRouter()

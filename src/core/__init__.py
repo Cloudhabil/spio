@@ -8,11 +8,14 @@ Components:
 - Observability (structured logging, tracing, metrics)
 - Skills Loader (YAML-based skill discovery)
 - Quantization (vector compression)
+- Reflex Engine (System 1 responses)
+- Hardware Fusion (direct tensor access)
 """
 
 from sovereign_pio.constants import PHI, ALPHA, OMEGA, BETA, GAMMA
 from sovereign_pio.calculator import D, Theta, Energy, x_from_D, lucas
 
+# Observability
 from .observability import (
     StructuredLogger,
     TraceContext,
@@ -26,6 +29,7 @@ from .observability import (
     set_current_trace,
 )
 
+# Skills
 from .skills_loader import (
     SkillLoader,
     SkillMetadata,
@@ -34,6 +38,7 @@ from .skills_loader import (
     SkillSchema,
 )
 
+# Quantization
 from .quantization import (
     Quantizer,
     QuantizedVector,
@@ -41,6 +46,22 @@ from .quantization import (
     ResidualVector,
     similarity_preservation,
     compute_compression_ratio,
+)
+
+# Reflex Engine
+from .reflex_engine import (
+    ReflexEngine,
+    Reflex,
+    ReflexPriority,
+    ReflexResult,
+)
+
+# Hardware Fusion
+from .hardware_fusion import (
+    HardwareFusion,
+    FusedIndex,
+    BatchProcessor,
+    benchmark_fusion,
 )
 
 __all__ = [
@@ -72,4 +93,14 @@ __all__ = [
     "ResidualVector",
     "similarity_preservation",
     "compute_compression_ratio",
+    # Reflex
+    "ReflexEngine",
+    "Reflex",
+    "ReflexPriority",
+    "ReflexResult",
+    # Hardware Fusion
+    "HardwareFusion",
+    "FusedIndex",
+    "BatchProcessor",
+    "benchmark_fusion",
 ]
