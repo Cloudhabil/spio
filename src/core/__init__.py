@@ -64,6 +64,21 @@ from .hardware_fusion import (
     benchmark_fusion,
 )
 
+# Measured Silicon
+from .measured_silicon import (
+    SiliconLayer,
+    BandwidthMeasurement,
+    WormholeConnection,
+    MEASURED,
+    WORMHOLES,
+    get_bandwidth,
+    get_optimal_parallel,
+    npu_bandwidth,
+    find_wormhole,
+    route_dimension_to_silicon,
+    hardware_stats,
+)
+
 # 12-Wavelength Cognitive Structure
 from .wavelengths import (
     WavelengthGate,
@@ -127,6 +142,18 @@ __all__ = [
     "FusedIndex",
     "BatchProcessor",
     "benchmark_fusion",
+    # Measured Silicon
+    "SiliconLayer",
+    "BandwidthMeasurement",
+    "WormholeConnection",
+    "MEASURED",
+    "WORMHOLES",
+    "get_bandwidth",
+    "get_optimal_parallel",
+    "npu_bandwidth",
+    "find_wormhole",
+    "route_dimension_to_silicon",
+    "hardware_stats",
     # 12-Wavelength
     "WavelengthGate",
     "GateResult",

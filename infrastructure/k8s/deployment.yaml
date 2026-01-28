@@ -1,0 +1,155 @@
+# Sovereign PIO - Kubernetes Deployment
+# PHI-governed autonomous agent platform
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sovereign-pio
+  labels:
+    app: sovereign-pio
+    version: "1.618.1"
+
+---
+# =============================================================================
+# PERSISTENT VOLUME CLAIM - Agent Memory
+# =============================================================================
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spio-data
+  namespace: sovereign-pio
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# =============================================================================
+# CONFIG MAP - Agent Configuration
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spio-config
+  namespace: sovereign-pio
+data:
+  PYTHONPATH: "/app/src"
+  GENESIS_CONSTANT: "0.00221975"
+  ENABLE_LEARNING: "true"
+  ENABLE_CONVERGENCE: "true"
+  LOG_LEVEL: "INFO"
+
+---
+# =============================================================================
+# DEPLOYMENT - Substrate Gateway
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spio-gateway
+  namespace: sovereign-pio
+  labels:
+    app: sovereign-pio
+    component: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sovereign-pio
+      component: gateway
+  template:
+    metadata:
+      labels:
+        app: sovereign-pio
+        component: gateway
+    spec:
+      containers:
+        - name: gateway
+          image: sovereign-pio:1.618.1
+          ports:
+            - containerPort: 8009
+              name: http
+          envFrom:
+            - configMapRef:
+                name: spio-config
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "250m"
+            limits:
+              memory: "2Gi"
+              cpu: "1000m"
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8009
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8009
+            initialDelaySeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: spio-data
+
+---
+# =============================================================================
+# SERVICE - Gateway Exposure
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: spio-gateway
+  namespace: sovereign-pio
+spec:
+  selector:
+    app: sovereign-pio
+    component: gateway
+  ports:
+    - port: 8009
+      targetPort: 8009
+      name: http
+  type: ClusterIP
+
+---
+# =============================================================================
+# NETWORK POLICY - Security
+# =============================================================================
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: spio-network-policy
+  namespace: sovereign-pio
+spec:
+  podSelector:
+    matchLabels:
+      app: sovereign-pio
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              name: sovereign-pio
+      ports:
+        - port: 8009
+  egress:
+    # Allow DNS
+    - to: []
+      ports:
+        - port: 53
+          protocol: UDP
+    # Allow Ollama (external LLM)
+    - to: []
+      ports:
+        - port: 11434

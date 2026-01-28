@@ -1,0 +1,83 @@
+# Sovereign PIO - Multi-Service Orchestration
+# PHI-governed autonomous agent platform
+
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # SUBSTRATE GATEWAY - Level 2 AC
+  # ==========================================================================
+  gateway:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+    ports:
+      - "8009:8009"
+    volumes:
+      - spio-data:/app/data
+      - spio-npu:/app/data/npu
+    environment:
+      - PYTHONPATH=/app/src
+      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
+      - GENESIS_CONSTANT=0.00221975
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8009/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - spio-network
+
+  # ==========================================================================
+  # MCP SERVER - Model Context Protocol
+  # ==========================================================================
+  mcp:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+    command: ["python", "-m", "integrations.mcp_server"]
+    volumes:
+      - spio-data:/app/data
+    environment:
+      - PYTHONPATH=/app/src
+    stdin_open: true
+    tty: true
+    networks:
+      - spio-network
+
+  # ==========================================================================
+  # WAVELENGTH WORKER - Background Processing
+  # ==========================================================================
+  worker:
+    build:
+      context: ..
+      dockerfile: infrastructure/Dockerfile
+    command: ["python", "-c", "from core.wavelengths import WavelengthGate; g = WavelengthGate(); print('Worker ready')"]
+    volumes:
+      - spio-data:/app/data
+      - spio-npu:/app/data/npu
+    environment:
+      - PYTHONPATH=/app/src
+      - ENABLE_LEARNING=true
+      - ENABLE_CONVERGENCE=true
+    depends_on:
+      - gateway
+    networks:
+      - spio-network
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  spio-data:
+    driver: local
+  spio-npu:
+    driver: local
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  spio-network:
+    driver: bridge
