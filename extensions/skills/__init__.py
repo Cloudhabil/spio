@@ -5,11 +5,11 @@ Skills Extension - Complete Skill Framework for Sovereign PIO
 
 Categories:
 1. Base (8)         - Skill, SkillContext, SkillResult, SkillMetadata, SkillDependency
-2. Registry (5)     - SkillRegistry, GPIACoreRegistry, SkillCatalog
-3. Loader (6)       - ProgressiveLoader, SkillHandle, SkillManifest, LazyLoader
+2. Registry (5)     - SkillRegistry, GPIACoreSkillRegistry
+3. Loader (6)       - ProgressiveLoader, SkillHandle, SkillManifest
 4. Selector (4)     - AutonomousSkillSelector, SkillSelectorMemory, SelectionResult
 5. Code (6)         - PythonSkill, RefactorSkill, ReviewSkill, FormatSkill
-6. Data (4)         - AnalysisSkill, TransformSkill, ValidationSkill
+6. Data (4)         - AnalysisSkill, TransformSkill, DataValidationSkill
 7. Research (4)     - MathLiteratureSkill, BSDComparisonSkill, SynthesisSkill
 8. Cognition (4)    - NeuroIntuitionSkill, PatternRecognitionSkill, ReasoningSkill
 
