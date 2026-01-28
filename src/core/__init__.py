@@ -64,6 +64,30 @@ from .hardware_fusion import (
     benchmark_fusion,
 )
 
+# 12-Wavelength Cognitive Structure
+from .wavelengths import (
+    WavelengthGate,
+    GateResult,
+    ZeroPointInitializer,
+    PrimeDirective,
+    StochasticIngestor,
+    MaatAligner,
+    PrometheusSpark,
+    MetatronCube,
+    DensityArchitect,
+    SynapticBridge,
+    PredictionError,
+    GenerativeStream,
+    ThetaWaveGenerator,
+    HomeostaticUpdater,
+    EnduranceLoop,
+    ConvergenceResult,
+    TransparencyLogger,
+    HephaestusAlloy,
+    SubstrateCrystallizer,
+    PRIME_TARGET_DENSITY,
+)
+
 __all__ = [
     # Constants
     "PHI", "ALPHA", "OMEGA", "BETA", "GAMMA",
@@ -103,4 +127,25 @@ __all__ = [
     "FusedIndex",
     "BatchProcessor",
     "benchmark_fusion",
+    # 12-Wavelength
+    "WavelengthGate",
+    "GateResult",
+    "ZeroPointInitializer",
+    "PrimeDirective",
+    "StochasticIngestor",
+    "MaatAligner",
+    "PrometheusSpark",
+    "MetatronCube",
+    "DensityArchitect",
+    "SynapticBridge",
+    "PredictionError",
+    "GenerativeStream",
+    "ThetaWaveGenerator",
+    "HomeostaticUpdater",
+    "EnduranceLoop",
+    "ConvergenceResult",
+    "TransparencyLogger",
+    "HephaestusAlloy",
+    "SubstrateCrystallizer",
+    "PRIME_TARGET_DENSITY",
 ]
