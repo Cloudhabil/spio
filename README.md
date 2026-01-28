@@ -1,193 +1,138 @@
 # Sovereign PIO
 
-**A Unified Autonomous Agent Architecture for Multi-Channel Intelligent Systems**
+**A Unified Autonomous Agent Architecture with Mathematical Bridge to Hardware**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://python.org)
-[![Version](https://img.shields.io/badge/Version-1.618.0-green.svg)](pyproject.toml)
+[![Version](https://img.shields.io/badge/Version-1.618.0-gold.svg)](pyproject.toml)
+[![Website](https://img.shields.io/badge/Website-cloudhabil.com-blue.svg)](http://cloudhabil.com/)
 
-## Abstract
+## Overview
 
-Sovereign PIO (Personal Intelligent Operator) presents a novel architecture for autonomous agent systems, integrating deterministic computation frameworks with modern large language model orchestration. The system implements a four-layer abstraction model comprising interface management (PIO), cognitive reasoning (GPIA), runtime governance (ASIOS), and multi-channel communication (Moltbot). Central to the architecture is Brahim's Calculator, a mathematical framework based on the golden ratio (φ) that provides deterministic computation guarantees across all system operations.
+Sovereign PIO (Personal Intelligent Operator) is an autonomous agent architecture that bridges high-level AI operations with hardware through mathematical transformations based on the golden ratio (φ). The system implements a complete OS-like abstraction layer with 20 extensions providing kernel, memory, filesystem, drivers, and wormhole-based routing capabilities.
 
-## Table of Contents
+**Live Site**: [http://cloudhabil.com/](http://cloudhabil.com/)
 
-- [Introduction](#introduction)
-- [Architecture](#architecture)
-- [Mathematical Foundation](#mathematical-foundation)
-- [Component Specifications](#component-specifications)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Security Model](#security-model)
-- [References](#references)
-- [License](#license)
+## Key Statistics
 
-## Introduction
-
-The proliferation of large language models has created demand for robust agent architectures capable of operating across heterogeneous communication channels while maintaining deterministic behavior guarantees. Sovereign PIO addresses this challenge through a layered architecture that separates concerns across four distinct subsystems:
-
-1. **PIO** (Personal Intelligent Operator): User interface and session management
-2. **GPIA** (General Purpose Intelligence Architecture): Reasoning and memory systems
-3. **ASIOS** (Autonomous System Input/Output Supervisor): Runtime governance and resource management
-4. **Moltbot**: Multi-channel messaging gateway
-
-This separation enables independent scaling, testing, and deployment of each subsystem while maintaining coherent system behavior through well-defined interfaces.
+| Metric | Value |
+|--------|-------|
+| Extensions | 20 |
+| Components | 51+ |
+| Lines of Code | 18,862+ |
+| Dimensions | 12 |
+| Total States | 840 |
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            SOVEREIGN PIO v1.618.0                           │
-│              Personal Intelligent Operator · Autonomous Edition             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│    ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐       │
-│    │       PIO       │◄──►│      GPIA       │◄──►│      ASIOS      │       │
-│    │    Interface    │    │   Intelligence  │    │     Runtime     │       │
-│    │                 │    │                 │    │                 │       │
-│    │ • Sessions      │    │ • Reasoning     │    │ • FailSafe      │       │
-│    │ • Intent Det.   │    │ • Memory        │    │ • Governor      │       │
-│    │ • Middleware    │    │ • Embeddings    │    │ • Hardware Mon. │       │
-│    └─────────────────┘    └─────────────────┘    └─────────────────┘       │
-│              │                    │                      │                  │
-│              └────────────────────┼──────────────────────┘                  │
-│                                   ▼                                         │
-│    ┌───────────────────────────────────────────────────────────────────┐   │
-│    │                           MOLTBOT                                  │   │
-│    │                    Multi-Channel Gateway                           │   │
-│    │                                                                    │   │
-│    │    Terminal   Webhook   Telegram   Discord   Slack   WhatsApp     │   │
-│    └───────────────────────────────────────────────────────────────────┘   │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         SPIO Architecture                            │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                      │
+│  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐                │
+│  │ Skills  │  │ Agents  │  │Research │  │  IIAS   │   Applications │
+│  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘                │
+│       │            │            │            │                       │
+│  ┌────┴────────────┴────────────┴────────────┴────┐                 │
+│  │                    Kernel                       │   OS Layer      │
+│  │  (Scheduler, Processes, WorkerPool)            │                 │
+│  └────────────────────┬───────────────────────────┘                 │
+│                       │                                              │
+│  ┌────────┬───────────┼───────────┬────────┐                        │
+│  │ Memory │  Shell    │  Users    │  FS    │        Services        │
+│  └────┬───┘  └────┬───┘  └────┬───┘  └──┬──┘                        │
+│       │           │           │          │                           │
+│  ┌────┴───────────┴───────────┴──────────┴────┐                     │
+│  │              Wormhole Engine                │   Math Bridge      │
+│  │  (PHI transform, O(1) routing)             │                     │
+│  └────────────────────┬───────────────────────┘                     │
+│                       │                                              │
+│  ┌────────────────────┴───────────────────────┐                     │
+│  │              Drivers                        │   Hardware         │
+│  │  D1-4: NPU  │  D5-8: CPU  │  D9-12: GPU   │   Abstraction      │
+│  └────────────────────┬───────────────────────┘                     │
+│                       │                                              │
+│  ┌────────────────────┴───────────────────────┐                     │
+│  │         Physical Hardware                   │   Silicon          │
+│  │         NPU | CPU | GPU | RAM | SSD        │                     │
+│  └────────────────────────────────────────────┘                     │
+│                                                                      │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+## Extensions
+
+### OS Layer (8 extensions)
+
+| Extension | Description | Key Components |
+|-----------|-------------|----------------|
+| **kernel** | Process scheduling and orchestration | `KernelSubstrate`, `AdaptiveScheduler`, `ProcessManager` |
+| **memory** | Memory allocation and budget tracking | `MemoryPool`, `VirtualMemory`, `DenseStateMemory`, `BudgetLedger` |
+| **filesystem** | Virtual filesystem and artifact management | `VirtualFS`, `ArtifactClassifier`, `FilesystemGardener` |
+| **boot** | Genesis sequence and service management | `Boot`, `Genesis`, `BootLoader`, `ServiceManager` |
+| **drivers** | 12-dimension to silicon routing | `DimensionRouter`, `NPUDriver`, `GPUDriver`, `CPUDriver` |
+| **users** | Unix-style permissions and sandboxing | `Users`, `PermissionManager`, `Sandbox`, `ACL` |
+| **shell** | Terminal execution and REPL | `Shell`, `TerminalExecutor`, `CommandParser`, `REPL` |
+| **wormhole** | Mathematical bridge to hardware | `BrahimWormholeEngine`, `WormholeRouter`, `WormholeTransform` |
+
+### Application Layer (12 extensions)
+
+| Extension | Description |
+|-----------|-------------|
+| **skills** | 50+ autonomous skills with PHI-based selection |
+| **agents** | Multi-agent orchestration (`AlphaAgent`, `AgentRegistry`) |
+| **iias** | Intelligent Infrastructure Agent System |
+| **research** | BSD, Erdos-Straus, Hodge research automation |
+| **reflexes** | Trigger/action system (`ReflexRunner`) |
+| **psi** | Privacy and security (`BrahimRouter`, `FingerprintBlocker`) |
+| **dashboard** | Monitoring and control UI |
+| **boa_sdks** | Brahim Engine SDK integrations |
+| **brahims_laws** | BSD conjecture mathematical framework |
+| **gpia_wormhole** | GPIA wormhole topology |
+| **core** | Foundation utilities |
+| **scripts** | 93 utility scripts catalog |
 
 ## Mathematical Foundation
 
 ### Brahim's Calculator
 
-All numerical computations within Sovereign PIO are governed by Brahim's Calculator, a deterministic mathematical framework ensuring reproducible outputs across system operations.
-
-#### Fundamental Constants
-
-| Constant | Symbol | Value | Semantic Role |
-|----------|--------|-------|---------------|
-| Golden Ratio | φ (PHI) | 1.6180339887498949 | Universal scaling factor |
-| Creation | α (ALPHA) | φ | Forward transformation |
-| Return | ω (OMEGA) | 1/φ = 0.6180339887498949 | Inverse transformation |
-| Security | β (BETA) | 1/φ³ = 0.2360679774997897 | Safety margin coefficient |
-| Damping | γ (GAMMA) | 1/φ⁴ = 0.1458980337503155 | Attenuation factor |
-
-#### Core Functions
+All computations are deterministic using these constants:
 
 ```python
-def D(x: float) -> float:
-    """Dimension mapping function. Maps value x to φ-space dimension."""
-    return -log(x) / log(φ)
-
-def Θ(x: float) -> float:
-    """Phase function. Converts value to angular phase."""
-    return 2π × x
-
-def E(x: float) -> float:
-    """Energy function. Demonstrates conservation: E(x) = 2π ∀x > 0."""
-    return φ^D(x) × Θ(x)  # ≡ 2π
-
-def x_from_D(d: float) -> float:
-    """Inverse dimension mapping. Recovers x from dimension d."""
-    return 1 / φ^d
+PHI   = 1.6180339887498949   # Golden ratio
+ALPHA = 0.3819660112501051   # 1/PHI^2  (Creation)
+BETA  = 0.2360679774997897   # 1/PHI^3  (Security threshold)
+GAMMA = 0.1458980337503155   # 1/PHI^4  (Damping)
 ```
 
-#### Twelve-Dimension Model
+### Brahim Sequence
 
-The system organizes cognitive operations across twelve dimensions, each with Lucas number capacity:
+```python
+BRAHIM_SEQUENCE = (27, 42, 60, 75, 97, 117, 139, 154, 172, 187)
+# Mirror pairs sum to 214: 27+187, 42+172, 60+154, 75+139, 97+117
+```
 
-| Dimension | L(D) | Domain | Silicon Affinity |
-|-----------|------|--------|------------------|
-| D₁ | 1 | Perception | NPU |
-| D₂ | 3 | Attention | NPU |
-| D₃ | 4 | Security | NPU |
-| D₄ | 7 | Stability | NPU |
-| D₅ | 11 | Compression | CPU |
-| D₆ | 18 | Harmony | CPU |
-| D₇ | 29 | Reasoning | CPU |
-| D₈ | 47 | Prediction | CPU |
-| D₉ | 76 | Creativity | GPU |
-| D₁₀ | 123 | Wisdom | GPU |
-| D₁₁ | 199 | Integration | GPU |
-| D₁₂ | 322 | Unification | GPU |
+### 12-Dimension Model
 
-**Total State Capacity**: Σ L(Dᵢ) = 840 discrete states
+| Dimension | Lucas | Domain | Silicon |
+|-----------|-------|--------|---------|
+| D1 | 1 | Perception | NPU |
+| D2 | 3 | Attention | NPU |
+| D3 | 4 | Security | NPU |
+| D4 | 7 | Stability | NPU |
+| D5 | 11 | Compression | CPU |
+| D6 | 18 | Harmony | CPU |
+| D7 | 29 | Reasoning | CPU |
+| D8 | 47 | Prediction | CPU |
+| D9 | 76 | Creativity | GPU |
+| D10 | 123 | Wisdom | GPU |
+| D11 | 199 | Integration | GPU |
+| D12 | 322 | Unification | GPU |
 
-## Component Specifications
-
-### Implementation Status
-
-| Component | Status | LOC | Description |
-|-----------|--------|-----|-------------|
-| Calculator | Complete | ~150 | PHI, D(), Θ(), E(), lucas() |
-| Security | Complete | ~200 | CommandValidator, FilesystemGuard |
-| FailSafe | Complete | ~80 | Circuit breaker pattern |
-| Governor | Complete | ~300 | nvidia-smi integration, VRAM/thermal monitoring |
-| Memory | Complete | ~350 | Embeddings (Simple/Ollama/OpenAI), vector search |
-| Reasoning | Complete | ~400 | LLM client (Ollama/OpenAI), dimension routing |
-| PIO Operator | Complete | ~350 | Async sessions, intent detection, middleware |
-| Moltbot Channels | Complete | ~800 | Terminal, Webhook, Telegram, Discord |
-| Gateway | Complete | ~200 | Multi-channel orchestration |
-
-**Total**: ~2,830 lines of implementation code
-
-### Subsystem Details
-
-#### PIO (Personal Intelligent Operator)
-
-- **Session Management**: Stateful conversation tracking with UUID-based identification
-- **Intent Detection**: Pattern-based classification (Query, Command, Creative, Analysis)
-- **Middleware Pipeline**: Composable request/response processing chain
-- **Async Processing**: Full asyncio support for concurrent operations
-
-#### GPIA (Intelligence Layer)
-
-- **Memory System**: Semantic storage with embedding-based retrieval
-  - SimpleEmbedder: Hash-based deterministic vectors (fallback)
-  - OllamaEmbedder: Local embedding via Ollama API
-  - OpenAIEmbedder: Cloud embedding via OpenAI API
-- **Reasoning Engine**: LLM orchestration with dimension-aware routing
-  - Ollama backend support
-  - OpenAI backend support
-  - Streaming response capability
-- **Multi-Model Orchestrator**: Dimension-to-model mapping for specialized processing
-
-#### ASIOS (Runtime Layer)
-
-- **FailSafe**: Circuit breaker implementation
-  - Sliding window failure tracking
-  - Configurable threshold and cooldown
-  - Thread-safe operation
-- **Governor**: Hardware resource management
-  - Real-time nvidia-smi integration
-  - VRAM utilization monitoring (81.25% cliff protection)
-  - Thermal throttling (78°C threshold)
-  - Disk space monitoring
-
-#### Moltbot (Communication Layer)
-
-- **Gateway**: Centralized channel management with auto-reconnection
-- **Channels**:
-  - Terminal: Local CLI interaction
-  - Webhook: HTTP-based integration with HMAC authentication
-  - Telegram: Full Bot API implementation with long polling
-  - Discord: Gateway WebSocket with HTTP API
+**Total States**: 840 (sum of Lucas numbers)
 
 ## Installation
-
-### Requirements
-
-- Python 3.10 or higher
-- Optional: NVIDIA GPU with nvidia-smi for hardware monitoring
-- Optional: Ollama for local LLM inference
-
-### Standard Installation
 
 ```bash
 git clone https://github.com/Cloudhabil/spio.git
@@ -195,130 +140,120 @@ cd spio
 pip install -e .
 ```
 
-### With Development Dependencies
-
-```bash
-pip install -e ".[dev]"
-```
-
-### With GPU Support
-
-```bash
-pip install -e ".[gpu]"
-```
-
-## Usage
-
-### Quick Start
-
-```bash
-# Run component demonstration
-python examples/main.py --demo
-
-# Interactive terminal session
-python examples/main.py
-```
-
-### Programmatic Usage
+## Quick Start
 
 ```python
-import asyncio
-from sovereign_pio import PHI, D, Energy
-from pio import PIOOperator
-from gpia import Memory, ReasoningEngine, ModelConfig
-from moltbot import Gateway, TerminalChannel
+# Boot the system
+from extensions.boot import Boot
+boot = Boot()
+boot.run()
 
-async def main():
-    # Initialize components
-    memory = Memory()
-    reasoning = ReasoningEngine(ModelConfig.ollama())
+# Use wormhole compression (O(1))
+from extensions.wormhole import BrahimWormholeEngine
+engine = BrahimWormholeEngine()
+result = engine.transform([1, 2, 3, 4, 5], iterations=3)
+print(f"Compression: {result.compression_ratio}")  # 0.236 (BETA)
 
-    pio = PIOOperator()
-    pio.set_memory(memory)
-    pio.set_reasoning_engine(reasoning)
+# Route to hardware
+from extensions.drivers import Drivers
+drivers = Drivers()
+drivers.initialize()
+silicon = drivers.route_dimension(7)  # Reasoning -> CPU
 
-    # Process a query
-    response = await pio.process(
-        session_id="demo",
-        user_input="Explain the golden ratio."
-    )
-    print(response)
+# Memory management
+from extensions.memory import Memory
+memory = Memory(max_mb=512)
+block = memory.pool.allocate(1024 * 100, owner="my-task")
 
-asyncio.run(main())
+# User permissions
+from extensions.users import Users, AgentRole
+users = Users()
+agent = users.create_user("worker", AgentRole.STANDARD)
 ```
 
-### Channel Integration
+See [USAGE.md](USAGE.md) for comprehensive documentation.
 
-#### Telegram Bot
+## Wormhole Bridge
 
-```bash
-export TELEGRAM_BOT_TOKEN="your-token"
-python examples/telegram_bot.py
-```
+The wormhole extension provides the mathematical bridge between SPIO and hardware:
 
-#### Discord Bot
+```python
+from extensions.wormhole import BrahimWormholeEngine, WormholeRouter
 
-```bash
-export DISCORD_BOT_TOKEN="your-token"
-python examples/discord_bot.py
+# Create engine
+engine = BrahimWormholeEngine(throat_radius=1.0)
+
+# Validate geometry
+validation = engine.validate()
+# {'geometry_valid': True, 'traversable': True, 'stable': True, ...}
+
+# O(1) compression via wormhole transform
+# W(x) = x/PHI + C_bar * ALPHA
+result = engine.transform(data, iterations=3)
+# Compression ratio converges to BETA (0.236)
+
+# Route packets through wormhole shortcuts
+router = WormholeRouter()
+router.add_packet("doc1", "Python tutorial")
+router.add_packet("doc2", "Python ML library")
+router.create_wormhole("doc1", "doc2")  # O(1) shortcut
+
+result = router.route("Python")
+# Route type: direct (used wormhole), Latency: 0.01ms
 ```
 
 ## Security Model
 
-Sovereign PIO implements defense-in-depth security:
+- **Command Validation**: Blacklist + heuristic pattern detection
+- **Filesystem Sandboxing**: Zone-based access control
+- **User Permissions**: Unix-style (ROOT/ADMIN/STANDARD/GUEST)
+- **Resource Governance**: VRAM cliff protection, thermal throttling
 
-### Command Validation
-
-- Binary blacklist (shutdown, reboot, mkfs, dd, nc, shell interpreters)
-- Heuristic pattern detection (path traversal, command substitution)
-- Lexical analysis with safe parsing
-
-### Filesystem Sandboxing
-
-- Zone-based access control (read zones, write zones)
-- Path traversal prevention
-- Project root containment
-
-### Authentication
-
-- Multi-tier authentication (local, network, token)
-- HMAC signature verification for webhooks
-- Timing-safe credential comparison
-
-### Resource Governance
-
-- VRAM cliff protection (prevents Windows DWM instability)
-- Thermal throttling
-- Circuit breaker isolation
-
-## Project Statistics
+## Project Structure
 
 ```
-Repository:     github.com/Cloudhabil/spio
-Version:        1.618.0
-License:        MIT
-Language:       Python 3.10+
-Total Files:    58
-Lines of Code:  4,089
-Test Coverage:  Core mathematical functions
+sovereign-pio/
+├── extensions/
+│   ├── agents/          # Multi-agent orchestration
+│   ├── boa_sdks/        # SDK integrations
+│   ├── boot/            # Genesis & boot sequence
+│   ├── brahims_laws/    # Mathematical framework
+│   ├── core/            # Foundation utilities
+│   ├── dashboard/       # Monitoring UI
+│   ├── drivers/         # Hardware abstraction
+│   ├── filesystem/      # Virtual filesystem
+│   ├── gpia_wormhole/   # GPIA integration
+│   ├── iias/            # Intelligent agents
+│   ├── kernel/          # Process scheduling
+│   ├── memory/          # Memory management
+│   ├── psi/             # Privacy/security
+│   ├── reflexes/        # Trigger/action
+│   ├── research/        # Research automation
+│   ├── scripts/         # Utility scripts
+│   ├── shell/           # Terminal executor
+│   ├── skills/          # 50+ skills
+│   ├── users/           # Permissions
+│   └── wormhole/        # Mathematical bridge
+├── index.html           # GitHub Pages landing
+├── USAGE.md             # Comprehensive guide
+└── README.md            # This file
 ```
 
 ## References
 
-1. Livio, M. (2002). *The Golden Ratio: The Story of PHI, the World's Most Astonishing Number*. Broadway Books.
-2. Lucas, É. (1891). *Théorie des nombres*. Gauthier-Villars.
-3. Nygard, M. T. (2007). *Release It!: Design and Deploy Production-Ready Software*. Pragmatic Bookshelf. (Circuit breaker pattern)
-4. Vaswani, A., et al. (2017). "Attention Is All You Need." *Advances in Neural Information Processing Systems*.
+1. Livio, M. (2002). *The Golden Ratio: The Story of PHI*
+2. Morris, M. S., & Thorne, K. S. (1988). "Wormholes in spacetime"
+3. Lucas, É. (1891). *Théorie des nombres*
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+MIT License - See [LICENSE](LICENSE)
 
 ## Citation
 
 ```bibtex
 @software{sovereign_pio_2026,
-  title = {Sovereign PIO: A Unified Autonomous Agent Architecture},
+  title = {Sovereign PIO: Autonomous Agent Architecture with Mathematical Bridge},
   author = {Cloudhabil},
   year = {2026},
   url = {https://github.com/Cloudhabil/spio},
@@ -329,3 +264,5 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE) for detai
 ---
 
 *Sovereign PIO — Deterministic Intelligence Through Golden Ratio Governance*
+
+**PHI governs all ratios. Energy is always 2π.**
