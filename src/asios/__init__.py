@@ -1,8 +1,14 @@
 """
-ASIOS - Autonomous Operating System Runtime
+ASIOS - Autonomous System Input/Output Supervisor
 
 The runtime layer of Sovereign PIO.
 Handles governance, resource management, failsafe, and execution.
+
+Components:
+- FailSafe: Circuit breaker for failure isolation
+- Governor: Hardware resource management with nvidia-smi
+- Government: Minister cabinet for task routing
+- PassBroker: PASS protocol for agent-to-agent assistance
 """
 
 import threading
@@ -14,14 +20,29 @@ from sovereign_pio.constants import PHI, BETA
 
 # Import full implementations
 from .governor import Governor, HardwareMonitor, GPUStatus, SystemStatus
+from .government import Government, Minister, CabinetDecision, MetabolicCost
+from .pass_protocol import PassBroker, Capsule, Need, NeedType, PassState
 
 __all__ = [
+    # Runtime
     "ASIOSRuntime",
     "FailSafe",
+    # Governor
     "Governor",
     "HardwareMonitor",
     "GPUStatus",
     "SystemStatus",
+    # Government
+    "Government",
+    "Minister",
+    "CabinetDecision",
+    "MetabolicCost",
+    # PASS Protocol
+    "PassBroker",
+    "Capsule",
+    "Need",
+    "NeedType",
+    "PassState",
 ]
 
 
@@ -97,6 +118,8 @@ class ASIOSRuntime:
     def __init__(self):
         self.failsafe = FailSafe()
         self.governor = Governor()
+        self.government = Government()
+        self.pass_broker = PassBroker()
         self.phi = PHI
 
     async def execute(self, task: dict) -> dict:
@@ -110,9 +133,18 @@ class ASIOSRuntime:
         if health["throttled"]:
             return {"status": "throttled", "reason": "System throttled"}
 
+        # Route through government
+        task_desc = task.get("description", str(task))
+        decision = self.government.route(task_desc)
+
         # Execute with failsafe protection
         def run_task():
-            return {"status": "success", "result": task}
+            return {
+                "status": "success",
+                "result": task,
+                "routed_to": decision.minister.title,
+                "confidence": decision.confidence,
+            }
 
         try:
             return self.failsafe.execute(run_task)
@@ -126,6 +158,8 @@ class ASIOSRuntime:
             "throttled": self.governor.is_throttled,
             "critical_stop": self.governor.critical_stop,
             "governor": self.governor.check_health(),
+            "government": self.government.stats(),
+            "pass_broker": self.pass_broker.stats(),
         }
 
     def summary(self) -> str:
