@@ -9,7 +9,6 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Cloudhabil/spio"><img src="https://img.shields.io/github/actions/workflow/status/Cloudhabil/spio/ci.yml?branch=main&style=flat-square&label=CI" alt="CI Status"/></a>
   <a href="https://github.com/Cloudhabil/spio/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue?style=flat-square" alt="License"/></a>
   <a href="https://www.python.org/"><img src="https://img.shields.io/badge/python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white" alt="Python"/></a>
   <a href="https://github.com/Cloudhabil/spio"><img src="https://img.shields.io/badge/version-1.618.0-gold?style=flat-square" alt="Version"/></a>
