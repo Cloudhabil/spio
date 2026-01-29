@@ -284,7 +284,7 @@ def analyze_epsilon():
     print("EPSILON ANALYSIS: The Golden Correction")
     print("=" * 70)
 
-    print(f"\nEPSILON = 1/4 - log(phi)/2")
+    print("\nEPSILON = 1/4 - log(phi)/2")
     print(f"        = {mpmath.nstr(epsilon, 50)}")
 
     # What is epsilon close to?

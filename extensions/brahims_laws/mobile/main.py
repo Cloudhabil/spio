@@ -228,7 +228,8 @@ class BrahimAgentWidget(BoxLayout):
             Clock.schedule_once(lambda dt: self._show_result(result))
 
         except Exception as e:
-            Clock.schedule_once(lambda dt: self._show_result({"error": str(e)}))
+            err_msg = str(e)
+            Clock.schedule_once(lambda dt: self._show_result({"error": err_msg}))
 
     def on_chat_submit(self, instance):
         """Handle chat submission."""
@@ -256,7 +257,8 @@ class BrahimAgentWidget(BoxLayout):
             }
             Clock.schedule_once(lambda dt: self._show_result(result))
         except Exception as e:
-            Clock.schedule_once(lambda dt: self._show_result({"error": str(e)}))
+            err_msg = str(e)
+            Clock.schedule_once(lambda dt: self._show_result({"error": err_msg}))
 
     def on_mirror(self, instance):
         """Handle mirror operator."""

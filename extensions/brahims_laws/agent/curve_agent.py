@@ -413,7 +413,7 @@ def interactive_session():
 
                 result = Runner.run_sync(agent, query)
 
-                console.print(f"\n[bold blue]Agent:[/bold blue]")
+                console.print("\n[bold blue]Agent:[/bold blue]")
                 try:
                     console.print(Markdown(result.final_output))
                 except:

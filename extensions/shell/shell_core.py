@@ -226,7 +226,7 @@ class CommandValidator:
         # Check suspicious patterns
         for pattern in self.SUSPICIOUS_PATTERNS:
             if re.search(pattern, command.raw):
-                return False, f"Suspicious pattern detected"
+                return False, "Suspicious pattern detected"
 
         # Check allowed (if strict mode)
         # For now, allow all that aren't blocked

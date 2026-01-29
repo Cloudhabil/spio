@@ -202,7 +202,7 @@ class BrahimWormholeEngine:
         # Check alpha + beta = 1/phi
         identity_error = abs(ALPHA + BETA - PHI_INV)
         if identity_error > 1e-14:
-            raise ValueError(f"Constant identity violated: alpha + beta != 1/phi")
+            raise ValueError("Constant identity violated: alpha + beta != 1/phi")
 
         # Check sequence closure
         for i in range(DIMENSION // 2):

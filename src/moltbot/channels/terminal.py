@@ -34,8 +34,8 @@ class TerminalChannel(Channel):
         """Connect (no-op for terminal)."""
         self.connected = True
         print(f"\n{'='*50}")
-        print(f"  Sovereign PIO - Terminal Channel")
-        print(f"  Type 'exit' or 'quit' to end session")
+        print("  Sovereign PIO - Terminal Channel")
+        print("  Type 'exit' or 'quit' to end session")
         print(f"{'='*50}\n")
         return True
 

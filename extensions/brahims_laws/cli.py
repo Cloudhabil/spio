@@ -105,14 +105,14 @@ def analyze_curve(
         loader = CremonaLoader()
         curve = loader.load_by_label(label)
         if curve:
-            print_output(f"[dim]Loaded from Cremona database[/dim]")
+            print_output("[dim]Loaded from Cremona database[/dim]")
 
     if curve is None and source in ["auto", "lmfdb"]:
         print_output("[dim]Querying LMFDB...[/dim]")
         client = LMFDBClient()
         curve = client.fetch_by_label(label)
         if curve:
-            print_output(f"[dim]Loaded from LMFDB[/dim]")
+            print_output("[dim]Loaded from LMFDB[/dim]")
 
     if curve is None:
         print_error(f"Could not find curve {label}")
@@ -242,7 +242,7 @@ def batch_analyze(
         TableFormatter().format_batch(results, table_file)
         print_output(f"[green]Summary saved to {table_file}[/green]")
 
-    print_output(f"\n[bold green]Analysis complete![/bold green]")
+    print_output("\n[bold green]Analysis complete![/bold green]")
     print_output(f"Results: {output_dir}")
     print_output(f"Batch hash: {batch_audit['master_hash'][:32]}...")
 
@@ -823,7 +823,7 @@ def ml_pinn_train(
 
     # Validate
     validation = pinn.validate_brahim_laws()
-    print_output(f"\n[bold]Validation:[/bold]")
+    print_output("\n[bold]Validation:[/bold]")
     print_output(f"  Consistency satisfied: {validation['consistency_satisfied']}")
     print_output(f"  Sha prediction R2: {validation.get('sha_r2', 'N/A')}")
 

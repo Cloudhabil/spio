@@ -596,13 +596,13 @@ def main():
     print("\n[3] GENERATING FUNCTION")
     print("-" * 40)
     gf = calc.gf
-    print(f"  Zeroth order: k = 1 + (phi-1)/32")
+    print("  Zeroth order: k = 1 + (phi-1)/32")
     print(f"    Value: {float(gf.zeroth_order()):.15f}")
     print(f"    Error: {gf.error(gf.zeroth_order()):.2f} ppb")
-    print(f"  First order:  k = 1 + (phi-1)/32 + phi^(-27)/6")
+    print("  First order:  k = 1 + (phi-1)/32 + phi^(-27)/6")
     print(f"    Value: {float(gf.first_order()):.15f}")
     print(f"    Error: {gf.error(gf.first_order()):.2f} ppb")
-    print(f"  Exact:        k = 4/(3*e*log(phi))")
+    print("  Exact:        k = 4/(3*e*log(phi))")
     print(f"    Value: {float(gf.exact()):.15f}")
 
     print("\n[4] MASTER IDENTITY VERIFICATION")
@@ -624,9 +624,9 @@ def main():
 
     print("\n[6] FIBONACCI STRUCTURE")
     print("-" * 40)
-    print(f"  32 = F_8 + F_6 + F_4 = 21 + 8 + 3")
-    print(f"  Zeckendorf indices: [8, 6, 4] (even)")
-    print(f"  This encodes the Fibonacci structure in the generating function")
+    print("  32 = F_8 + F_6 + F_4 = 21 + 8 + 3")
+    print("  Zeckendorf indices: [8, 6, 4] (even)")
+    print("  This encodes the Fibonacci structure in the generating function")
 
     print("\n" + "=" * 70)
     print("RECALIBRATION COMPLETE")

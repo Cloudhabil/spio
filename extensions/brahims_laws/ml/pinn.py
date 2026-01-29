@@ -479,8 +479,8 @@ class PhysicsInformedPredictor:
         rhs = gamma + delta
         consistency_error = abs(lhs - rhs)
 
-        logger.info(f"\nConsistency Relation (Law 6):")
-        logger.info(f"  alpha = gamma + |delta|")
+        logger.info("\nConsistency Relation (Law 6):")
+        logger.info("  alpha = gamma + |delta|")
         logger.info(f"  {alpha:.6f} = {gamma:.6f} + {delta:.6f} = {rhs:.6f}")
         logger.info(f"  Error: {consistency_error:.6f}")
 

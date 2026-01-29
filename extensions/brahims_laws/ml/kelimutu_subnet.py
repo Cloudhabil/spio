@@ -726,7 +726,7 @@ def main():
     print("=" * 70)
     print("KELIMUTU SUBNET - THREE LAKES, ONE MAGMA")
     print(f"Coordinates: {KELIMUTU_LAT}°S, {KELIMUTU_LON}°E")
-    print(f"Note: Longitude 121.82 ≈ B₆ = 121 in Brahim sequence")
+    print("Note: Longitude 121.82 ≈ B₆ = 121 in Brahim sequence")
     print("=" * 70)
 
     agent = BOAKelimutuAgent()

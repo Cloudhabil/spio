@@ -864,7 +864,7 @@ def main():
 
     # Train
     train_stats = agent.train(training_data, epochs=10)
-    print(f"\nTraining complete!")
+    print("\nTraining complete!")
     print(f"Final accuracy: {train_stats['final_accuracy']:.1%}")
     print(f"Load balance loss: {train_stats['load_balance_loss']:.4f}")
 
