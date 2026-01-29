@@ -29,94 +29,99 @@ Author: Elias Oulad Brahim
 """
 
 from .iias_core import (
-    # ========================================================================
-    # CONSTANTS
-    # ========================================================================
-    PHI,
-    OMEGA,
-    BETA,
-    CENTER,
-    SUM_CONSTANT,
-    GENESIS_CONSTANT,
-    BRAHIM_NUMBERS,
-    B,
-    LUCAS,
-    TOTAL_STATES,
-
-    # ========================================================================
-    # ENUMS
-    # ========================================================================
-    SiliconLayer,
-    AppStatus,
-    Badge,
-    Category,
-
-    # ========================================================================
-    # SILICON SPECS
-    # ========================================================================
-    SiliconSpec,
-    SILICON_SPECS,
-
-    # ========================================================================
-    # DIMENSIONS
-    # ========================================================================
-    Dimension,
-    DIMENSIONS,
-    DIMENSION_NAMES,
-
-    # ========================================================================
-    # DIMENSION ROUTER
-    # ========================================================================
-    DimensionRouter,
-
-    # ========================================================================
-    # GENESIS
-    # ========================================================================
-    GenesisController,
-    genesis,
-
-    # ========================================================================
-    # APPLICATIONS
-    # ========================================================================
-    IIASApp,
-    FOUNDATION_APPS,
-    INFRASTRUCTURE_APPS,
-    EDGE_APPS,
     AI_ML_APPS,
-    SECURITY_APPS,
-    BUSINESS_APPS,
-    DATA_APPS,
-    IOT_APPS,
-    COMMUNICATION_APPS,
-    DEVELOPER_APPS,
-    SCIENTIFIC_APPS,
-    PERSONAL_APPS,
-    FINANCE_APPS,
     ALL_APPS,
-
-    # ========================================================================
-    # APP REGISTRY
-    # ========================================================================
-    AppRegistry,
-
-    # ========================================================================
-    # BALANCERS & ALLOCATORS
-    # ========================================================================
-    MirrorBalancer,
-    LucasAllocator,
-    PhiSaturator,
-
+    BETA,
+    BRAHIM_NUMBERS,
+    BUSINESS_APPS,
+    CENTER,
+    CLOSURE_EXPONENT,
+    COMMUNICATION_APPS,
+    DATA_APPS,
+    DEVELOPER_APPS,
+    DIMENSION_NAMES,
+    DIMENSIONS,
+    EDGE_APPS,
+    EXPLICIT_ERROR_TOLERANCE,
+    FINANCE_APPS,
+    FOUNDATION_APPS,
+    GENESIS_CONSTANT,
     # ========================================================================
     # MAIN INTERFACE
     # ========================================================================
     IIAS,
-
+    # ========================================================================
+    # GOLDBACH CONSTANTS & FUNCTIONS
+    # ========================================================================
+    INDS_ALLOWED_DR,
+    INDS_MIN_TYPES_PER_CLASS,
+    INDS_TOTAL_TYPES,
+    INFRASTRUCTURE_APPS,
+    IOT_APPS,
+    LUCAS,
+    OMEGA,
+    PERSONAL_APPS,
+    # ========================================================================
+    # CONSTANTS
+    # ========================================================================
+    PHI,
+    PHI_PI_GAP,
+    PRODUCTIVE_FRACTION,
+    SCIENTIFIC_APPS,
+    SECURITY_APPS,
+    SILICON_SPECS,
+    STRUCTURAL_OVERHEAD,
+    SUM_CONSTANT,
+    TOTAL_STATES,
+    # ========================================================================
+    # APP REGISTRY
+    # ========================================================================
+    AppRegistry,
+    AppStatus,
+    B,
+    Badge,
+    Category,
+    # ========================================================================
+    # DIMENSIONS
+    # ========================================================================
+    Dimension,
+    # ========================================================================
+    # DIMENSION ROUTER
+    # ========================================================================
+    DimensionRouter,
+    # ========================================================================
+    # GENESIS
+    # ========================================================================
+    GenesisController,
+    # ========================================================================
+    # APPLICATIONS
+    # ========================================================================
+    IIASApp,
+    LucasAllocator,
+    # ========================================================================
+    # BALANCERS & ALLOCATORS
+    # ========================================================================
+    MirrorBalancer,
+    PhiSaturator,
+    # ========================================================================
+    # ENUMS
+    # ========================================================================
+    SiliconLayer,
+    # ========================================================================
+    # SILICON SPECS
+    # ========================================================================
+    SiliconSpec,
     # ========================================================================
     # FACTORY FUNCTIONS
     # ========================================================================
     create_iias,
-    create_router,
     create_registry,
+    create_router,
+    digital_root,
+    genesis,
+    inds_routing_class,
+    is_within_tolerance,
+    productive_capacity,
 )
 
 __all__ = [
@@ -146,6 +151,20 @@ __all__ = [
     "Dimension",
     "DIMENSIONS",
     "DIMENSION_NAMES",
+
+    # Goldbach
+    "INDS_ALLOWED_DR",
+    "INDS_TOTAL_TYPES",
+    "INDS_MIN_TYPES_PER_CLASS",
+    "CLOSURE_EXPONENT",
+    "PRODUCTIVE_FRACTION",
+    "STRUCTURAL_OVERHEAD",
+    "PHI_PI_GAP",
+    "EXPLICIT_ERROR_TOLERANCE",
+    "digital_root",
+    "inds_routing_class",
+    "productive_capacity",
+    "is_within_tolerance",
 
     # Router
     "DimensionRouter",
