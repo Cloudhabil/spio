@@ -56,6 +56,8 @@ def cmd_run(args) -> int:
     if args.llm == "ollama":
         config.llm_model = args.model or "llama3.2"
         config.llm_host = args.host or "http://localhost:11434"
+        if args.embed_model:
+            config.embedding_model = args.embed_model
     elif args.llm == "openai":
         config.llm_model = args.model or "gpt-4o-mini"
         config.openai_api_key = args.api_key or ""
@@ -128,6 +130,7 @@ def main():
     run_parser.add_argument("--model", default=None, help="Model name")
     run_parser.add_argument("--host", default=None, help="Ollama host URL")
     run_parser.add_argument("--api-key", default=None, help="OpenAI API key")
+    run_parser.add_argument("--embed-model", default=None, help="Ollama embedding model (default: nomic-embed-text)")
     run_parser.add_argument("--telegram", default=None, help="Telegram bot token")
     run_parser.add_argument("--discord", default=None, help="Discord bot token")
 

@@ -32,11 +32,13 @@ class RuntimeConfig:
     llm_model: str = "llama3.2"          # model name for ollama/openai
     llm_host: str = "http://localhost:11434"
     openai_api_key: str = ""
+    embedding_model: str = "nomic-embed-text"  # Ollama embedding model
 
     channel: str = "terminal"            # "terminal", "telegram", "discord"
     channel_token: str = ""              # token for telegram/discord
 
     wavelength_threshold: float = 0.1
+    wavelength_enforce: bool = True      # block requests that fail safety gate
     memory_persist_path: str | None = None
 
 
@@ -93,7 +95,38 @@ class SovereignRuntime:
             if self.config.memory_persist_path
             else None
         )
-        self.memory = Memory(embedder=SimpleEmbedder(), persist_path=persist)
+
+        # Use semantic embedder when an LLM provider is configured
+        embedder = SimpleEmbedder()
+        if self.config.llm_provider == "ollama":
+            try:
+                from gpia.memory import OllamaEmbedder
+                embedder = OllamaEmbedder(
+                    model=self.config.embedding_model,
+                    host=self.config.llm_host,
+                )
+                # Probe connection — fall back to hash-based if Ollama is down
+                embedder.embed("probe")
+                logger.info("GPIA Memory: OllamaEmbedder active")
+            except Exception as exc:
+                logger.warning(
+                    "OllamaEmbedder unavailable (%s), falling back to SimpleEmbedder",
+                    exc,
+                )
+                embedder = SimpleEmbedder()
+        elif self.config.llm_provider == "openai" and self.config.openai_api_key:
+            try:
+                from gpia.memory import OpenAIEmbedder
+                embedder = OpenAIEmbedder(api_key=self.config.openai_api_key)
+                logger.info("GPIA Memory: OpenAIEmbedder active")
+            except Exception as exc:
+                logger.warning(
+                    "OpenAIEmbedder unavailable (%s), falling back to SimpleEmbedder",
+                    exc,
+                )
+                embedder = SimpleEmbedder()
+
+        self.memory = Memory(embedder=embedder, persist_path=persist)
 
         # --- 2b. GPIA: Reasoning (optional) ---
         if self.config.llm_provider != "echo":
@@ -231,12 +264,23 @@ class SovereignRuntime:
         """Middleware: check ASIOS governor health before processing."""
         health = self.asios.governor.check_health()
         session.context["asios_health"] = health
+
         if health.get("critical"):
-            return "[ASIOS] Critical stop active — request blocked."
+            errors = "; ".join(health.get("errors", []))
+            logger.error("ASIOS critical stop: %s", errors)
+            return f"[ASIOS] Critical stop — {errors}. Request blocked for hardware safety."
+
+        if health.get("throttled"):
+            warnings = "; ".join(health.get("warnings", []))
+            logger.warning("ASIOS throttled: %s", warnings)
+            # Throttled = warn but allow (degraded mode)
+            session.context["asios_throttled"] = True
+            session.context["asios_warnings"] = warnings
+
         return None  # continue pipeline
 
     async def _wavelength_audit_middleware(self, pio, session, text):
-        """Middleware: run input through WavelengthGate for audit."""
+        """Middleware: run input through WavelengthGate for audit + enforcement."""
         gate_result = self.wavelength_gate.evaluate(text)
         session.context["wavelength"] = {
             "density": gate_result.density,
@@ -245,7 +289,25 @@ class SovereignRuntime:
             "converged": gate_result.converged,
             "reason": gate_result.reason,
         }
-        return None  # audit only, never short-circuit
+
+        # Enforce safety: block if unsafe AND did not self-correct.
+        # Only enforce when a real LLM provider is active — in echo mode the
+        # hash-based embedder produces arbitrary densities, so enforcement
+        # would be noise.
+        enforce = (
+            self.config.wavelength_enforce
+            and self.config.llm_provider != "echo"
+        )
+        if enforce and not gate_result.safe and not gate_result.converged:
+            logger.warning(
+                "Wavelength gate blocked request: %s", gate_result.reason,
+            )
+            return (
+                f"[WAVELENGTH] Request blocked — {gate_result.reason}. "
+                "The cognitive pipeline could not converge to a safe state."
+            )
+
+        return None  # safe or self-corrected — continue pipeline
 
     # ------------------------------------------------------------------
     # Internal: PassBroker providers
