@@ -163,14 +163,33 @@ class SovereignRuntime:
 
         # --- 2d. IIAS App Executor ---
         try:
-            from iias.iias_core import AppExecutor
+            from iias.iias_core import AppContext, AppExecutor
+
+            import sovereign_pio.calculator as _calc_module
+
+            app_context: AppContext | None = None
+            try:
+                from sovereign_pio.brahim_api import BrahimAPI
+                app_context = AppContext(
+                    calculator=_calc_module,
+                    brahim_api=BrahimAPI(),
+                    wavelength_gate=self.wavelength_gate,
+                    inference_router=self.inference_router,
+                    reasoning_engine=self.reasoning_engine,
+                    memory=self.memory,
+                )
+            except Exception as ctx_exc:
+                logger.warning("AppContext build failed: %s", ctx_exc)
+
             self.app_executor = AppExecutor(
                 inference_router=self.inference_router,
                 reasoning_engine=self.reasoning_engine,
+                context=app_context,
             )
             logger.info(
-                "AppExecutor: %d apps available",
+                "AppExecutor: %d apps available (context=%s)",
                 len(self.app_executor.registry.list_all()),
+                "yes" if app_context is not None else "no",
             )
         except Exception as exc:
             logger.warning("AppExecutor unavailable: %s", exc)

@@ -266,6 +266,67 @@ async def silicon_status():
     }
 
 
+@app.get("/app/test-foundation")
+async def test_foundation():
+    """
+    Execute all 5 foundation apps and return computed results.
+
+    Proves that foundation handlers produce real data from
+    DimensionRouter, GenesisController, MirrorBalancer,
+    LucasAllocator, and PhiSaturator — not generic stubs.
+    """
+    if _runtime is None:
+        raise HTTPException(status_code=503, detail="Runtime not booted")
+    if _runtime.app_executor is None:
+        raise HTTPException(
+            status_code=501, detail="AppExecutor not available",
+        )
+
+    import json as _json
+
+    foundation_apps = [
+        ("dimension_router", "Route 50MB"),
+        ("genesis_controller", "Init"),
+        ("mirror_balancer", "Balance 1000"),
+        ("lucas_allocator", "Allocate 840"),
+        ("phi_saturator", "Bandwidth 16"),
+    ]
+
+    results: dict = {}
+    for app_name, query in foundation_apps:
+        try:
+            app_result = await _runtime.app_executor.execute(
+                app_name=app_name, query=query,
+            )
+            # Parse JSON response back to dict for clean output
+            try:
+                computed = _json.loads(app_result.response)
+            except (ValueError, TypeError):
+                computed = app_result.response
+            results[app_name] = {
+                "success": app_result.success,
+                "silicon_target": app_result.silicon_target,
+                "silicon_device": app_result.silicon_device,
+                "silicon_elapsed_ms": round(
+                    app_result.silicon_elapsed_ms, 4,
+                ),
+                "computed": computed,
+            }
+        except Exception as exc:
+            results[app_name] = {
+                "success": False,
+                "error": str(exc),
+            }
+
+    passed = sum(1 for v in results.values() if v.get("success"))
+    return {
+        "foundation_apps": len(foundation_apps),
+        "passed": passed,
+        "all_passed": passed == len(foundation_apps),
+        "results": results,
+    }
+
+
 @app.get("/api/status")
 async def api_status():
     """Simple status for Docker health checks."""

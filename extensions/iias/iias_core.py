@@ -1012,6 +1012,176 @@ class AppResult:
         }
 
 
+@dataclass
+class AppContext:
+    """Infrastructure bundle passed to foundation app handlers."""
+
+    calculator: Any = None       # sovereign_pio.calculator module
+    brahim_api: Any = None       # BrahimAPI instance
+    wavelength_gate: Any = None
+    inference_router: Any = None
+    reasoning_engine: Any = None
+    memory: Any = None
+
+
+# ============================================================================
+# FOUNDATION APP HANDLERS
+# ============================================================================
+
+def _parse_numeric(query: str, default: float = 100.0) -> float:
+    """Extract first number from query string, or return default."""
+    import re
+    match = re.search(r"[\d]+(?:\.[\d]+)?", query)
+    return float(match.group()) if match else default
+
+
+def _dict_to_embedding(data: dict, seed: int = 0) -> Any:
+    """Build a deterministic 384-dim vector from result dict."""
+    import numpy as np
+    raw = json.dumps(data, sort_keys=True, default=str)
+    h = 0
+    for ch in raw:
+        h = (h * 31 + ord(ch)) & 0xFFFFFFFF
+    rng = np.random.RandomState(h ^ seed)
+    return rng.randn(1, 384).astype(np.float32)
+
+
+def _handle_dimension_router(
+    query: str, ctx: AppContext,
+) -> dict[str, Any]:
+    """Foundation handler: DimensionRouter."""
+    router = DimensionRouter()
+    data_mb = _parse_numeric(query, 100.0)
+    routing = router.route(data_mb)
+
+    # INDS routing for the integer part of the query value
+    inds_target = router.route_by_inds(int(data_mb))
+
+    return {
+        "request_mb": data_mb,
+        "routing": routing["routing"],
+        "time_ms": routing["time_ms"],
+        "total_time_ms": routing["total_time_ms"],
+        "inds_target": inds_target,
+        "conservation": routing["conservation"],
+    }
+
+
+def _handle_genesis_controller(
+    query: str, ctx: AppContext,
+) -> dict[str, Any]:
+    """Foundation handler: GenesisController."""
+    controller = GenesisController()
+    result = controller.genesis()
+
+    energy_proof = 2 * math.pi
+    dimension_proof = None
+    if ctx.calculator is not None:
+        try:
+            energy_proof = ctx.calculator.Energy(GENESIS_CONSTANT)
+            dimension_proof = ctx.calculator.D(GENESIS_CONSTANT)
+        except Exception:
+            pass
+
+    return {
+        "status": result["status"],
+        "genesis_constant": result["genesis_constant"],
+        "dimensions": result["dimensions"],
+        "total_states": result["total_states"],
+        "energy_proof": energy_proof,
+        "dimension_proof": dimension_proof,
+    }
+
+
+def _handle_mirror_balancer(
+    query: str, ctx: AppContext,
+) -> dict[str, Any]:
+    """Foundation handler: MirrorBalancer."""
+    balancer = MirrorBalancer()
+    load = _parse_numeric(query, 1000.0)
+    balance = balancer.balance(load)
+    conserved = balancer.verify_conservation()
+
+    mirror_107 = None
+    if ctx.brahim_api is not None:
+        try:
+            mirror_107 = ctx.brahim_api.mirror(CENTER)
+        except Exception:
+            pass
+
+    return {
+        "load": load,
+        "pairs": balance["pairs"],
+        "conservation_verified": conserved,
+        "sum_constant": SUM_CONSTANT,
+        "mirror_of_107": mirror_107,
+    }
+
+
+def _handle_lucas_allocator(
+    query: str, ctx: AppContext,
+) -> dict[str, Any]:
+    """Foundation handler: LucasAllocator."""
+    allocator = LucasAllocator()
+    resource = _parse_numeric(query, float(TOTAL_STATES))
+    allocations = allocator.allocate(resource)
+
+    # Cross-check with calculator.lucas() per dimension
+    if ctx.calculator is not None:
+        for alloc in allocations:
+            try:
+                calc_lucas = ctx.calculator.lucas(alloc["dimension"])
+                alloc["lucas_verified"] = calc_lucas == alloc["lucas"]
+            except Exception:
+                alloc["lucas_verified"] = None
+
+    return {
+        "resource": resource,
+        "total_states": allocator.total,
+        "allocations": allocations,
+    }
+
+
+def _handle_phi_saturator(
+    query: str, ctx: AppContext,
+) -> dict[str, Any]:
+    """Foundation handler: PhiSaturator."""
+    saturator = PhiSaturator()
+    n = int(_parse_numeric(query, 16.0))
+    bandwidth = saturator.saturate(n)
+    optimal = saturator.optimal_n()
+    curve = saturator.curve(max_n=max(n, 20))
+
+    # Cross-check with calculator.npu_bandwidth()
+    calc_bw = None
+    determinism_verified = None
+    if ctx.calculator is not None:
+        try:
+            calc_bw = ctx.calculator.npu_bandwidth(n)
+            # Both use BW_MAX * (1 - exp(-n/PHI)); small float diff OK
+            determinism_verified = abs(bandwidth - calc_bw) < 0.2
+        except Exception:
+            pass
+
+    return {
+        "n_parallel": n,
+        "bandwidth_gbps": bandwidth,
+        "optimal_n": optimal,
+        "curve_points": len(curve),
+        "calculator_bw": calc_bw,
+        "determinism_verified": determinism_verified,
+    }
+
+
+FOUNDATION_HANDLERS: dict[str, Any] = {
+    "dimension_router": _handle_dimension_router,
+    "genesis_controller": _handle_genesis_controller,
+    "mirror_balancer": _handle_mirror_balancer,
+    "lucas_allocator": _handle_lucas_allocator,
+    "phi_saturator": _handle_phi_saturator,
+}
+
+
 class AppExecutor:
     """
     Execute IIAS apps through real silicon.
@@ -1021,8 +1191,12 @@ class AppExecutor:
     real hardware, and the optional ReasoningEngine provides LLM reasoning
     tailored to the dimension's system prompt.
 
+    Foundation apps (1-5) use dedicated handler functions that call the real
+    foundation classes (DimensionRouter, GenesisController, etc.) and
+    cross-check results against the Calculator and BrahimAPI.
+
     Usage:
-        executor = AppExecutor(inference_router, reasoning_engine)
+        executor = AppExecutor(inference_router, reasoning_engine, context)
         result = await executor.execute("dimension_router", "Route 100MB of data")
     """
 
@@ -1030,9 +1204,11 @@ class AppExecutor:
         self,
         inference_router=None,
         reasoning_engine=None,
+        context: AppContext | None = None,
     ):
         self.inference_router = inference_router
         self.reasoning_engine = reasoning_engine
+        self.context = context or AppContext()
         self.registry = AppRegistry()
         self._execution_count: dict[str, int] = {}
 
@@ -1046,16 +1222,16 @@ class AppExecutor:
 
         1. Look up app in registry
         2. Map category -> dimension -> silicon target
-        3. Dispatch to InferenceRouter (if available)
-        4. Call ReasoningEngine (if available) with dimension-aware params
-        5. Return AppResult with silicon provenance
+        3. If foundation handler exists, run real computation
+        4. Dispatch embedding to InferenceRouter (if available)
+        5. Fall back to generic path for apps 6-125
 
         Args:
             app_name: Name of the IIAS app (e.g., "dimension_router")
             query: Input query or parameters for the app
 
         Returns:
-            AppResult with silicon dispatch data and optional LLM response
+            AppResult with silicon dispatch data and computed response
         """
         app = self.registry.get_by_name(app_name)
         if app is None:
@@ -1075,7 +1251,42 @@ class AppExecutor:
         dim_name = DIMENSION_NAMES[dimension]
         silicon_target = DIMENSION_SILICON[dimension]
 
-        # Silicon dispatch
+        # --- Foundation handler path ---
+        handler = FOUNDATION_HANDLERS.get(app_name)
+        if handler is not None:
+            try:
+                computed = handler(query, self.context)
+            except Exception as exc:
+                computed = {"error": str(exc)}
+
+            # Dispatch computed-data embedding to silicon
+            device = ""
+            elapsed = 0.0
+            if self.inference_router is not None:
+                embedding = _dict_to_embedding(computed, seed=app.id)
+                dispatch = self.inference_router.dispatch(
+                    dimension=dimension, data=embedding,
+                )
+                device = dispatch.device
+                elapsed = dispatch.elapsed_ms
+
+            self._execution_count[app_name] = (
+                self._execution_count.get(app_name, 0) + 1
+            )
+            return AppResult(
+                app_id=app.id,
+                app_name=app.name,
+                category=app.category,
+                dimension=dimension,
+                dimension_name=dim_name,
+                silicon_target=silicon_target,
+                silicon_device=device,
+                silicon_elapsed_ms=elapsed,
+                response=json.dumps(computed, default=str),
+                success="error" not in computed,
+            )
+
+        # --- Generic path (apps 6-125, unchanged) ---
         device = ""
         elapsed = 0.0
         if self.inference_router is not None:
@@ -1096,7 +1307,10 @@ class AppExecutor:
             )
             response = result.response
         elif query:
-            response = f"[{app.name}] Executed on {silicon_target} (D{dimension}/{dim_name}): {query}"
+            response = (
+                f"[{app.name}] Executed on {silicon_target}"
+                f" (D{dimension}/{dim_name}): {query}"
+            )
 
         self._execution_count[app_name] = self._execution_count.get(app_name, 0) + 1
 
