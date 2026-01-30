@@ -4,11 +4,20 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Cloudhabil/spio/blob/main/LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
-[![Version 1.618.0](https://img.shields.io/badge/version-1.618.0-gold.svg)](https://github.com/Cloudhabil/spio)
+[![Version 1.618.1](https://img.shields.io/badge/version-1.618.1-gold.svg)](https://github.com/Cloudhabil/spio)
 [![Ruff](https://img.shields.io/badge/linter-ruff-261230.svg)](https://docs.astral.sh/ruff/)
 [![Mypy](https://img.shields.io/badge/type%20check-mypy-blue.svg)](https://mypy-lang.org/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](https://github.com/Cloudhabil/spio)
 
-Sovereign PIO routes AI workloads to NPU, CPU, and GPU silicon using deterministic golden-ratio mathematics. All routing decisions are O(1), all energy conserved at 2PI, all capacity governed by 840 discrete Lucas states across 12 cognitive dimensions.
+Four autonomous layers -- **PIO**, **GPIA**, **ASIOS**, **Moltbot** -- wired into a single runtime. One command boots the full stack: session management, semantic memory, LLM reasoning, resource governance, safety auditing, and multi-channel I/O.
+
+```
+spio run                     # terminal + echo mode
+spio run --llm ollama        # terminal + Ollama LLM
+spio status                  # JSON status of all 4 layers
+```
+
+All routing decisions are O(1), all energy conserved at 2&pi;, all capacity governed by 840 discrete Lucas states across 12 cognitive dimensions.
 
 ---
 
@@ -16,7 +25,9 @@ Sovereign PIO routes AI workloads to NPU, CPU, and GPU silicon using determinist
 
 - [Installation](#installation)
 - [Quick Start](#quick-start)
-- [Architecture](#architecture)
+- [Runtime Architecture](#runtime-architecture)
+- [Message Pipeline](#message-pipeline)
+- [CLI Reference](#cli-reference)
 - [The 12 Dimensions](#the-12-dimensions)
 - [Extensions](#extensions)
 - [Mathematical Foundation](#mathematical-foundation)
@@ -61,6 +72,9 @@ pip install -e ".[dev]"
 ### Verify Installation
 
 ```bash
+spio --version
+# Sovereign PIO v1.618.1
+
 python -c "from sovereign_pio.constants import PHI; print(f'PHI = {PHI}')"
 # PHI = 1.6180339887498949
 ```
@@ -69,79 +83,180 @@ python -c "from sovereign_pio.constants import PHI; print(f'PHI = {PHI}')"
 
 ## Quick Start
 
-### Initialize the System
+### One Command
 
-```python
-from extensions.iias import create_iias
-
-iias = create_iias()
-result = iias.initialize()
-print(result["status"])       # "initialized"
-print(result["dimensions"])   # 12
-print(result["total_states"]) # 840
+```bash
+spio run
 ```
 
-### Route a Workload
+This boots all four layers with the terminal channel in echo mode (no external dependencies). Type a message, get a response, all middleware runs.
+
+### With an LLM
+
+```bash
+spio run --llm ollama              # local Ollama
+spio run --llm ollama --model mistral
+spio run --llm openai --api-key sk-...
+```
+
+### From Python
+
+```python
+import asyncio
+from sovereign_pio.runtime import SovereignRuntime, RuntimeConfig
+
+config = RuntimeConfig(llm_provider="echo")
+runtime = SovereignRuntime(config)
+runtime.boot()
+
+# Process a single message
+response = asyncio.run(
+    runtime.pio.process("session-1", "What is the golden ratio?")
+)
+print(response)
+# [PIO] Received (query): What is the golden ratio?
+
+# Inspect all layers
+print(runtime.status())
+# {'booted': True, 'pio': {...}, 'gpia': {...}, 'asios': {...}, 'moltbot': {...}, ...}
+```
+
+### IIAS Routing
 
 ```python
 from extensions.iias import DimensionRouter
 
 router = DimensionRouter()
-result = router.route(100.0)  # 100 MB request
-
-# Workload is decomposed across 12 dimensions
-# and routed to NPU (D1-D4), CPU (D5-D8), GPU (D9-D12)
+result = router.route(100.0)  # 100 MB workload -> NPU/CPU/GPU split
 print(result["total_time_ms"])
-print(result["routing"])
-```
-
-### INDS Routing (O(1) Silicon Classification)
-
-```python
-from extensions.iias import DimensionRouter
-
-router = DimensionRouter()
-
-# Digital-root based deterministic routing
-router.route_by_inds(42)   # -> "NPU" (dr=6 maps to GPU... actually dr=6 -> GPU)
-router.route_by_inds(100)  # -> "NPU" (dr=1)
-router.route_by_inds(77)   # -> "CPU" (dr=5)
-```
-
-### Evidence Database
-
-```python
-from src.core.evidence_db import EvidenceDB
-
-with EvidenceDB("cycle_001.db") as db:
-    db.record_constants()
-    axioms = db.verify_axioms()  # 6 axioms verified
-    summary = db.finalize()
-    print(f"Size: {db.size_kb():.1f} KB")
 ```
 
 ---
 
-## Architecture
+## Runtime Architecture
+
+`SovereignRuntime` is the central bootstrap that wires the four layers.
 
 ```
-+---------------------------------------------------------------------+
-|                        APPLICATION LAYER                             |
-|  Skills (50+)  |  Agents  |  IIAS (125 apps)  |  Research           |
-+---------------------------------------------------------------------+
-|                         OS LAYER                                     |
-|  Kernel  |  Memory  |  Filesystem  |  Shell  |  Users  |  Safety    |
-+---------------------------------------------------------------------+
-|                      MATH BRIDGE                                     |
-|  Wormhole Engine  |  PHI Transform  |  O(1) Routing  |  Evidence DB |
-+---------------------------------------------------------------------+
-|                      SILICON LAYER                                   |
-|  D1-D4 : NPU (7.35 GB/s)  |  D5-D8 : CPU (26.0 GB/s)              |
-|  D9-D12: GPU (12.0 GB/s)  |  SSD: 2.8 GB/s                        |
-+---------------------------------------------------------------------+
+┌─────────────────────────────────────────────────────────┐
+│                    MOLTBOT (Gateway)                     │
+│  Terminal  |  Telegram  |  Discord  |  Webhook           │
+└──────────────────────┬──────────────────────────────────┘
+                       │ on_message
+┌──────────────────────▼──────────────────────────────────┐
+│                     PIO (Operator)                        │
+│  Sessions  |  Intent Detection  |  Middleware Pipeline    │
+│                                                           │
+│  ┌─ middleware[0]: ASIOS safety    (Governor.check_health)│
+│  ├─ middleware[1]: Wavelength audit (WavelengthGate)      │
+│  ├─ middleware[2]: Logging                                │
+│  ├─ middleware[3]: Memory store                           │
+│  └─ default: Memory.search → ReasoningEngine.reason       │
+└──────────────────────┬──────────────────────────────────┘
+                       │
+          ┌────────────┼────────────┐
+          ▼            ▼            ▼
+┌──────────────┐ ┌──────────┐ ┌──────────────┐
+│     GPIA     │ │  ASIOS   │ │  Wavelength  │
+│ Memory       │ │ Governor │ │  Gate        │
+│ Reasoning    │ │ Gov't    │ │  (12 phases) │
+│ Embeddings   │ │ PassBrkr │ │              │
+│ (Ollama/OAI) │ │ FailSafe │ │              │
+└──────────────┘ └──────────┘ └──────────────┘
 ```
 
-All bandwidth values are hardware-measured (RTX 4070 SUPER, Intel AI Boost, DDR5, NVMe).
+### The Four Layers
+
+| Layer | Package | Role |
+|-------|---------|------|
+| **PIO** | `src/pio/` | User-facing operator: sessions, intent detection, middleware pipeline |
+| **GPIA** | `src/gpia/` | Intelligence: semantic memory (SimpleEmbedder/Ollama/OpenAI), LLM reasoning engine, dense state |
+| **ASIOS** | `src/asios/` | OS runtime: Governor (hardware monitoring), Government (minister routing), PassBroker (agent-to-agent PASS protocol), FailSafe (circuit breaker) |
+| **Moltbot** | `src/moltbot/` | Multi-channel gateway: Terminal, Telegram, Discord, Webhook channels |
+
+### Boot Sequence
+
+`SovereignRuntime.boot()` executes in order:
+
+1. **WavelengthGate** -- 12-phase active inference pipeline (sense, correct, persist)
+2. **Memory** -- semantic store with SimpleEmbedder fallback
+3. **ReasoningEngine** -- optional, Ollama or OpenAI backend
+4. **ASIOSRuntime** -- Governor + Government + PassBroker + FailSafe
+5. **PIOOperator** -- wired to Memory and ReasoningEngine, 4 middleware attached
+6. **Gateway** -- channel registered, handler wired to `pio.process()`
+7. **PassBroker providers** -- KNOWLEDGE (from Memory) and CAPABILITY (from Government)
+
+---
+
+## Message Pipeline
+
+Every message flows through the full stack:
+
+```
+User input
+  │
+  ▼
+Gateway.on_message(handler)
+  │
+  ▼
+PIOOperator.process(session_id, text)
+  │
+  ├─► middleware[0]: ASIOS safety check
+  │     Governor.check_health() → session.context["asios_health"]
+  │     If critical → "[ASIOS] Critical stop active" (short-circuit)
+  │
+  ├─► middleware[1]: Wavelength audit
+  │     WavelengthGate.evaluate(text) → session.context["wavelength"]
+  │     Records: density, resonance, safe, converged
+  │
+  ├─► middleware[2]: Logging
+  │     Prints [LOG] Session <id>: <text>
+  │
+  ├─► middleware[3]: Memory store
+  │     Stores substantial messages (>50 chars) to Memory
+  │
+  └─► default processing:
+        Memory.search(query, top_k=3)    → context
+        ReasoningEngine.reason(query)    → response
+        (or echo fallback: "[PIO] Received (intent): text")
+  │
+  ▼
+Response returned to Gateway → Channel → User
+```
+
+---
+
+## CLI Reference
+
+```
+spio [command] [options]
+```
+
+### Commands
+
+| Command | Description |
+|---------|-------------|
+| `spio run` | Boot the full runtime and start the gateway |
+| `spio status` | Boot in echo mode, print JSON status of all layers |
+
+### Run Options
+
+| Flag | Description |
+|------|-------------|
+| `--llm {echo,ollama,openai}` | LLM provider (default: echo) |
+| `--model NAME` | Model name (default: llama3.2 for Ollama, gpt-4o-mini for OpenAI) |
+| `--host URL` | Ollama host URL (default: http://localhost:11434) |
+| `--api-key KEY` | OpenAI API key |
+| `--telegram TOKEN` | Use Telegram channel with bot token |
+| `--discord TOKEN` | Use Discord channel with bot token |
+
+### Legacy Flags
+
+| Flag | Description |
+|------|-------------|
+| `--version`, `-v` | Print version |
+| `--constants`, `-c` | Print Brahim's Calculator constants |
+| `--info`, `-i` | Print architecture layer summary |
 
 ---
 
@@ -296,11 +411,6 @@ print(occ["occupied_dimensions"])  # >= 4 guaranteed
 budget = router.productive_budget(1000.0)
 print(budget["productive"])   # 666.67
 print(budget["structural"])   # 333.33
-
-# Real-time validation with phi-pi tolerance
-rt = router.can_achieve_realtime_validated(10.0)
-print(rt["feasible"])         # True/False
-print(rt["tolerance_used"])   # 0.01159...
 ```
 
 ---
@@ -330,9 +440,8 @@ from extensions.iias import AppRegistry
 
 registry = AppRegistry()
 stats = registry.stats()
-print(f"Total: {stats['total']}")
-print(f"Done: {stats['done']}")
-print(f"Categories: {len(stats['categories'])}")
+print(f"Total: {stats['total']}")       # 125
+print(f"Categories: {len(stats['categories'])}")  # 13
 ```
 
 ---
@@ -347,6 +456,10 @@ name = "sovereign-pio"
 version = "1.618.0"
 requires-python = ">=3.10"
 
+[project.scripts]
+spio = "sovereign_pio.cli:main"
+sovereign-pio = "sovereign_pio.cli:main"
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
@@ -354,6 +467,27 @@ target-version = "py310"
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+```
+
+### RuntimeConfig
+
+```python
+from sovereign_pio.runtime import RuntimeConfig
+
+config = RuntimeConfig(
+    llm_provider="ollama",           # "echo" | "ollama" | "openai"
+    llm_model="llama3.2",           # model name
+    llm_host="http://localhost:11434",
+    openai_api_key="",
+    channel="terminal",             # "terminal" | "telegram" | "discord"
+    channel_token="",               # bot token for telegram/discord
+    wavelength_threshold=0.1,
+    memory_persist_path=None,       # path for persistent memory
+)
 ```
 
 ### Environment Variables
@@ -378,13 +512,13 @@ ignore_missing_imports = true
 
 | Metric             | Value     |
 |--------------------|-----------|
-| Python files       | 149       |
-| Lines of code      | 54,300    |
+| Python files       | 150+      |
 | Extensions         | 28        |
 | IIAS applications  | 125       |
 | Cognitive dims     | 12        |
 | Total Lucas states | 840       |
 | Goldbach extensions| 6         |
+| Integration tests  | 9         |
 | Lint (ruff)        | Passing   |
 | Type check (mypy)  | Passing   |
 
@@ -398,6 +532,14 @@ ignore_missing_imports = true
 | [CLAUDE.md](CLAUDE.md)                    | AI assistant integration instructions  |
 | [examples/](examples/)                    | Code examples and notebooks            |
 
+### Examples
+
+| File | Description |
+|------|-------------|
+| [`examples/main.py`](examples/main.py) | Full stack demo with terminal channel |
+| [`examples/telegram_bot.py`](examples/telegram_bot.py) | Telegram bot integration |
+| [`examples/discord_bot.py`](examples/discord_bot.py) | Discord bot integration |
+
 ---
 
 ## Contributing
@@ -409,10 +551,14 @@ ignore_missing_imports = true
    ruff check .
    mypy src/ extensions/ --ignore-missing-imports
    ```
-4. Commit with a conventional message: `feat(scope): description`
-5. Push and open a Pull Request
+4. Run tests:
+   ```bash
+   pytest tests/ -v
+   ```
+5. Commit with a conventional message: `feat(scope): description`
+6. Push and open a Pull Request
 
-All contributions must pass `ruff` and `mypy` checks before merge.
+All contributions must pass `ruff`, `mypy`, and `pytest` before merge.
 
 ---
 
@@ -432,7 +578,7 @@ Copyright (c) 2026 Sovereign PIO Team.
   author  = {Oulad Brahim, Elias},
   year    = {2026},
   url     = {https://github.com/Cloudhabil/spio},
-  version = {1.618.0},
+  version = {1.618.1},
   license = {MIT}
 }
 ```
