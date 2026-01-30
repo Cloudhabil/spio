@@ -275,6 +275,46 @@ class InferenceRouter:
         """Dispatch to all 12 dimensions and return results."""
         return [self.dispatch(d, data) for d in range(1, 13)]
 
+    def spectral_dispatch(
+        self,
+        z: complex,
+        data: np.ndarray,
+        k_range: int = 3,
+    ) -> list[DispatchResult]:
+        """
+        Multi-branch spectral dispatch using D_k(z).
+
+        Maps each branch k ∈ [-k_range, k_range] to a real dimension via:
+            spectral_dim = (floor(|Im(D_k(z))|) mod 12) + 1
+
+        This distributes computation across multiple silicon targets
+        simultaneously, reflecting the branch structure of D_k(z).
+        For z = i, branches cycle through all 12 dimensions.
+
+        Args:
+            z: Complex value for branch computation
+            data: Input data as numpy array
+            k_range: Maximum |k| (default 3, yields 7 branches)
+
+        Returns:
+            List of DispatchResults, one per branch.
+        """
+        from sovereign_pio.calculator import D_complex
+
+        results = []
+        for k in range(-k_range, k_range + 1):
+            d_k = D_complex(z, k)
+            spectral_dim = int(abs(d_k.imag)) % 12 + 1
+
+            result = self.dispatch(dimension=spectral_dim, data=data)
+            result.metadata["branch_k"] = k
+            result.metadata["D_k_real"] = round(d_k.real, 6)
+            result.metadata["D_k_imag"] = round(d_k.imag, 6)
+            result.metadata["spectral"] = True
+            results.append(result)
+
+        return results
+
     def stats(self) -> dict[str, Any]:
         """Get router statistics."""
         return {

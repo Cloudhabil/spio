@@ -4,7 +4,7 @@ Brahim's Calculator Constants
 All computations in Sovereign PIO are DETERMINISTIC using these constants.
 """
 
-from math import sqrt, pi
+from math import log, pi, sqrt
 
 # The Golden Ratio - Foundation of all calculations
 PHI = (1 + sqrt(5)) / 2  # 1.6180339887498949
@@ -20,6 +20,14 @@ GENESIS_CONSTANT = 2 / 901  # 0.00221975...
 
 # Energy (always 2*PI)
 ENERGY_CONSTANT = 2 * pi
+
+# Complex domain — branch spacing between D_k and D_{k+1}
+# 2*PI / ln(PHI)  ≈  13.0472
+BRANCH_SPACING = 2 * pi / log(PHI)
+
+# Axiom A6: the symmetry 107/214 = 1/2
+# When z = i, D_k(i) is purely imaginary for all k.
+AXIOM_A6 = 107 / 214  # = 0.5 exactly
 
 # Lucas Numbers for dimension capacity
 LUCAS_NUMBERS = [1, 3, 4, 7, 11, 18, 29, 47, 76, 123, 199, 322]

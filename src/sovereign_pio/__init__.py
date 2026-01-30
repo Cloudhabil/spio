@@ -11,27 +11,36 @@ A unified autonomous agent platform combining:
 __version__ = "1.618.1"
 __author__ = "Sovereign PIO Team"
 
-from .constants import PHI, ALPHA, OMEGA, BETA, GAMMA
-from .calculator import D, Theta, Energy, x_from_D
-
 # Brahim API
 from .brahim_api import (
-    BrahimAPI,
-    WormholeGeometry,
-    DimensionalState,
-    PhiHierarchy,
     BRAHIM_SEQUENCE,
     CENTER,
     PAIR_SUM,
+    BrahimAPI,
+    DimensionalState,
+    PhiHierarchy,
+    WormholeGeometry,
     brahim_mirror,
-    wormhole_transform,
+    dimension_transition,
     inverse_wormhole_transform,
+    lyapunov_stability,
+    optimal_route,
     phi_compress,
     phi_decompress,
-    optimal_route,
-    dimension_transition,
-    lyapunov_stability,
+    wormhole_transform,
 )
+from .calculator import (
+    D,
+    D_complex,
+    Energy,
+    Energy_complex,
+    Theta,
+    Theta_complex,
+    branch_spectrum,
+    spectral_dimensions,
+    x_from_D,
+)
+from .constants import ALPHA, BETA, GAMMA, OMEGA, PHI
 
 __all__ = [
     "__version__",
@@ -41,11 +50,17 @@ __all__ = [
     "OMEGA",
     "BETA",
     "GAMMA",
-    # Calculator
+    # Calculator — real domain
     "D",
     "Theta",
     "Energy",
     "x_from_D",
+    # Calculator — complex domain
+    "D_complex",
+    "Theta_complex",
+    "Energy_complex",
+    "branch_spectrum",
+    "spectral_dimensions",
     # Brahim API
     "BrahimAPI",
     "WormholeGeometry",
