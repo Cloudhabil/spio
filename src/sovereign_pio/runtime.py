@@ -64,6 +64,7 @@ class SovereignRuntime:
         self.wavelength_gate = None
         self.memory = None
         self.reasoning_engine = None
+        self.inference_router = None
         self.asios = None
         self.pio = None
         self.gateway = None
@@ -147,6 +148,18 @@ class SovereignRuntime:
                 )
             self.reasoning_engine = ReasoningEngine(model_cfg)
 
+        # --- 2c. Inference Router (real silicon dispatch) ---
+        try:
+            from core.inference_router import InferenceRouter
+            self.inference_router = InferenceRouter()
+            logger.info(
+                "InferenceRouter: %s",
+                self.inference_router.capabilities,
+            )
+        except Exception as exc:
+            logger.warning("InferenceRouter unavailable: %s", exc)
+            self.inference_router = None
+
         # --- 3. ASIOS ---
         from asios import ASIOSRuntime
         self.asios = ASIOSRuntime()
@@ -163,9 +176,11 @@ class SovereignRuntime:
         if self.reasoning_engine is not None:
             self.pio.set_reasoning_engine(self.reasoning_engine)
 
-        # Middleware: safety -> wavelength -> logging -> memory_store
+        # Middleware: safety -> wavelength -> silicon audit -> logging -> memory_store
         self.pio.use(self._asios_safety_middleware)
         self.pio.use(self._wavelength_audit_middleware)
+        if self.inference_router is not None:
+            self.pio.use(self._silicon_audit_middleware)
         self.pio.use(logging_middleware)
         self.pio.use(memory_store_middleware)
 
@@ -187,6 +202,10 @@ class SovereignRuntime:
         self.asios.pass_broker.register_provider(
             NeedType.CAPABILITY, self._capability_provider,
         )
+        if self.inference_router is not None:
+            self.asios.pass_broker.register_provider(
+                NeedType.RESOURCE, self._inference_provider,
+            )
 
         self._booted = True
         logger.info("SovereignRuntime booted")
@@ -227,6 +246,8 @@ class SovereignRuntime:
         result["asios"] = self.asios.get_status()
         result["moltbot"] = self.gateway.status()
         result["wavelength_gate"] = self.wavelength_gate.get_stats()
+        if self.inference_router is not None:
+            result["inference_router"] = self.inference_router.stats()
         return result
 
     # ------------------------------------------------------------------
@@ -330,3 +351,38 @@ class SovereignRuntime:
             "minister": decision.minister.title,
             "confidence": decision.confidence,
         }
+
+    def _inference_provider(self, capsule, need):
+        """Provide silicon inference via InferenceRouter."""
+        if self.inference_router is None:
+            return None
+        return self.inference_router.stats()
+
+    # ------------------------------------------------------------------
+    # Internal: silicon audit middleware
+    # ------------------------------------------------------------------
+
+    async def _silicon_audit_middleware(self, pio, session, text):
+        """Middleware: run a silicon probe and record dispatch data."""
+
+        if self.inference_router is None:
+            return None
+
+        # Embed the text into a vector using memory's embedder
+        embedding = self.memory.embedder.embed(text)
+
+        # Detect dimension from intent (use reasoning engine's routing)
+        dimension = 7  # default: reasoning
+        if self.reasoning_engine is not None:
+            dimension = self.reasoning_engine.route_to_dimension(
+                session.context.get("intent", "reasoning"),
+            )
+
+        # Dispatch to real silicon
+        result = self.inference_router.dispatch(
+            dimension=dimension,
+            data=embedding,
+        )
+
+        session.context["silicon"] = result.to_dict()
+        return None  # audit — continue pipeline
