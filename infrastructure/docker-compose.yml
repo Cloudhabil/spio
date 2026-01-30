@@ -1,11 +1,10 @@
 # Sovereign PIO - Multi-Service Orchestration
-# PHI-governed autonomous agent platform
 
 version: '3.8'
 
 services:
   # ==========================================================================
-  # SUBSTRATE GATEWAY - Level 2 AC
+  # SUBSTRATE GATEWAY - FastAPI server wired to SovereignRuntime
   # ==========================================================================
   gateway:
     build:
@@ -18,12 +17,14 @@ services:
       - spio-npu:/app/data/npu
     environment:
       - PYTHONPATH=/app/src
-      - OLLAMA_URL=http://host.docker.internal:11434/api/generate
-      - GENESIS_CONSTANT=0.00221975
+      - SPIO_LLM_PROVIDER=${SPIO_LLM_PROVIDER:-echo}
+      - SPIO_LLM_MODEL=${SPIO_LLM_MODEL:-llama3.2}
+      - SPIO_LLM_HOST=http://host.docker.internal:11434
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8009/health')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8009/api/status')"]
       interval: 30s
       timeout: 10s
+      start_period: 15s
       retries: 3
     restart: unless-stopped
     networks:
@@ -47,22 +48,34 @@ services:
       - spio-network
 
   # ==========================================================================
-  # WAVELENGTH WORKER - Background Processing
+  # WAVELENGTH WORKER - Background wavelength processing loop
   # ==========================================================================
   worker:
     build:
       context: ..
       dockerfile: infrastructure/Dockerfile
-    command: ["python", "-c", "from core.wavelengths import WavelengthGate; g = WavelengthGate(); print('Worker ready')"]
+    command: >
+      python -c "
+      import sys, time, logging;
+      sys.path.insert(0, 'src');
+      logging.basicConfig(level=logging.INFO);
+      from core.wavelengths import WavelengthGate;
+      gate = WavelengthGate(threshold=0.1, enable_learning=True, enable_convergence=True, auto_persist=True);
+      print('Worker ready — wavelength gate active');
+      while True:
+          stats = gate.get_stats();
+          print(f'Wavelength worker: updates={stats[\"updates\"]}, events={stats[\"events\"]}');
+          time.sleep(60)
+      "
     volumes:
       - spio-data:/app/data
       - spio-npu:/app/data/npu
     environment:
       - PYTHONPATH=/app/src
-      - ENABLE_LEARNING=true
-      - ENABLE_CONVERGENCE=true
     depends_on:
-      - gateway
+      gateway:
+        condition: service_healthy
+    restart: unless-stopped
     networks:
       - spio-network
 

@@ -1,20 +1,18 @@
 """
 Sovereign PIO Server
 
-FastAPI-based gateway for substrate routing and API access.
+FastAPI-based gateway wired to SovereignRuntime.
 """
 
 from .substrate_gateway import (
-    SubstrateGateway,
+    HealthResponse,
     QueryRequest,
     QueryResponse,
-    HealthResponse,
     app,
     run_server,
 )
 
 __all__ = [
-    "SubstrateGateway",
     "QueryRequest",
     "QueryResponse",
     "HealthResponse",

@@ -1,44 +1,59 @@
 """
-Substrate Gateway - Level 2 Autonomous Control
+Substrate Gateway - FastAPI server wired to SovereignRuntime.
 
-FastAPI gateway implementing two-tier validation:
-1. GPU Reasoning (heavy inference)
-2. NPU Audit (12-wavelength security validation)
+Endpoints:
+    POST /query        Process a prompt through PIO → GPIA → ASIOS → Silicon
+    GET  /health       Health check (governor hardware status)
+    GET  /status       Full runtime status (all 4 layers + inference router)
+    GET  /silicon      Inference router capabilities and dispatch stats
 
-Routes reasoning to optimal silicon based on dimension routing.
+Run:
+    python -m server.substrate_gateway
+    uvicorn server.substrate_gateway:app --host 0.0.0.0 --port 8009
 """
 
-import time
+from __future__ import annotations
+
 import logging
-from typing import Optional
-from pathlib import Path
+import time
+from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger("substrate_gateway")
 
-# =============================================================================
-# API MODELS
-# =============================================================================
+# Global runtime — initialized in lifespan
+_runtime = None
+
+
+# ---------------------------------------------------------------------------
+# Request / Response models
+# ---------------------------------------------------------------------------
 
 class QueryRequest(BaseModel):
     """Request for substrate query."""
     prompt: str
+    session_id: str = "api"
     max_tokens: int = 512
     temperature: float = 0.1
-    dimension: Optional[int] = 7  # Default to reasoning dimension
+    dimension: int | None = Field(
+        default=None,
+        description="Force a specific dimension (1-12). None = auto-detect.",
+    )
 
 
 class QueryResponse(BaseModel):
     """Response from substrate query."""
     text: str
-    resonance: float
-    density: float
-    safe: bool
-    latency_ms: float
-    hardware: str
-    dimension: int
+    session_id: str
+    resonance: float = 0.0
+    density: float = 0.0
+    safe: bool = True
+    silicon: dict[str, Any] = Field(default_factory=dict)
+    latency_ms: float = 0.0
+    dimension: int = 7
 
 
 class HealthResponse(BaseModel):
@@ -46,150 +61,176 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     uptime_seconds: float
+    gpu_available: bool = False
+    gpu_name: str = ""
+    healthy: bool = True
+    warnings: list[str] = Field(default_factory=list)
 
 
-# =============================================================================
-# GATEWAY APPLICATION
-# =============================================================================
+# ---------------------------------------------------------------------------
+# Lifespan — boot runtime on startup, shutdown on exit
+# ---------------------------------------------------------------------------
 
-class SubstrateGateway:
-    """
-    Substrate Gateway with two-tier validation.
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Boot SovereignRuntime on startup."""
+    global _runtime
 
-    Level 2 AC Protocol:
-    1. Route to appropriate silicon (GPU for reasoning, NPU for audit)
-    2. Validate resonance through 12-wavelength gate
-    3. Return audited response with confidence metrics
-    """
+    import os
+    import sys
+    sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent.parent))
 
-    def __init__(self):
-        self.start_time = time.time()
-        self.version = "1.618.1"
-        self._wavelength_gate = None
-        self._llm_client = None
+    from sovereign_pio.runtime import RuntimeConfig, SovereignRuntime
 
-    def _ensure_wavelength_gate(self):
-        """Lazy-load wavelength gate."""
-        if self._wavelength_gate is None:
-            try:
-                from core.wavelengths import WavelengthGate
-                self._wavelength_gate = WavelengthGate(
-                    threshold=0.1,
-                    enable_learning=True,
-                    enable_convergence=True
-                )
-            except ImportError:
-                logger.warning("WavelengthGate not available")
-        return self._wavelength_gate
+    llm_provider = os.environ.get("SPIO_LLM_PROVIDER", "echo")
+    llm_model = os.environ.get("SPIO_LLM_MODEL", "llama3.2")
+    llm_host = os.environ.get("SPIO_LLM_HOST", "http://localhost:11434")
 
-    async def query(self, request: QueryRequest) -> QueryResponse:
-        """
-        Process query through two-tier validation.
+    config = RuntimeConfig(
+        llm_provider=llm_provider,
+        llm_model=llm_model,
+        llm_host=llm_host,
+        channel="terminal",
+    )
 
-        1. Generate response (GPU/LLM)
-        2. Audit through wavelength gate (NPU)
-        3. Return with resonance metrics
-        """
-        start_time = time.perf_counter()
+    _runtime = SovereignRuntime(config)
+    _runtime.boot()
+    _runtime._start_time = time.time()
 
-        # Step 1: Generate response
-        # In production, this would call TensorRT or Ollama
-        raw_text = self._generate_response(request.prompt, request.max_tokens)
+    logger.info(
+        "SubstrateGateway booted: llm=%s, model=%s",
+        llm_provider, llm_model,
+    )
+    yield
 
-        # Step 2: Audit through wavelength gate
-        gate = self._ensure_wavelength_gate()
-
-        if gate:
-            result = gate.evaluate(raw_text)
-            resonance = result.resonance
-            density = result.density
-            safe = result.safe
-            final_text = raw_text if safe else f"[AUDIT_BLOCK] {result.reason}"
-        else:
-            # Fallback: pass through
-            resonance = 0.0
-            density = 0.022  # Genesis constant
-            safe = True
-            final_text = raw_text
-
-        latency = (time.perf_counter() - start_time) * 1000
-
-        return QueryResponse(
-            text=final_text,
-            resonance=resonance,
-            density=density,
-            safe=safe,
-            latency_ms=latency,
-            hardware="GPU+NPU" if gate else "CPU",
-            dimension=request.dimension
-        )
-
-    def _generate_response(self, prompt: str, max_tokens: int) -> str:
-        """
-        Generate response from LLM.
-
-        In production, this calls TensorRT-LLM or Ollama.
-        """
-        # Placeholder - in production, call actual LLM
-        return f"[Simulated response to: {prompt[:50]}...]"
-
-    def health(self) -> HealthResponse:
-        """Health check."""
-        return HealthResponse(
-            status="healthy",
-            version=self.version,
-            uptime_seconds=time.time() - self.start_time
-        )
+    # Shutdown
+    await _runtime.shutdown()
+    logger.info("SubstrateGateway shut down")
 
 
-# =============================================================================
-# FASTAPI APPLICATION
-# =============================================================================
+# ---------------------------------------------------------------------------
+# FastAPI app
+# ---------------------------------------------------------------------------
 
 app = FastAPI(
     title="Sovereign PIO Substrate Gateway",
-    description="Level 2 AC - Two-tier GPU reasoning + NPU audit",
-    version="1.618.1"
+    description="SPIO API — PIO + GPIA + ASIOS + InferenceRouter",
+    version="1.618.2",
+    lifespan=lifespan,
 )
 
-gateway = SubstrateGateway()
 
+# ---------------------------------------------------------------------------
+# Endpoints
+# ---------------------------------------------------------------------------
 
 @app.post("/query", response_model=QueryResponse)
 async def substrate_query(request: QueryRequest):
     """
-    Query the substrate with two-tier validation.
+    Process a prompt through the full SPIO pipeline.
 
-    1. Routes to GPU for reasoning
-    2. Audits through NPU wavelength gate
-    3. Returns response with resonance metrics
+    1. ASIOS governor health check
+    2. Wavelength gate audit + enforcement
+    3. Silicon dispatch (GPU/NPU/CPU)
+    4. PIO reasoning (LLM when configured)
     """
+    if _runtime is None:
+        raise HTTPException(status_code=503, detail="Runtime not booted")
+
+    start = time.perf_counter()
+
     try:
-        return await gateway.query(request)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        response_text = await _runtime.pio.process(
+            session_id=request.session_id,
+            user_input=request.prompt,
+            channel="api",
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    latency = (time.perf_counter() - start) * 1000
+
+    # Extract middleware data from session context
+    session = _runtime.pio.get_session(request.session_id)
+    wl = session.context.get("wavelength", {}) if session else {}
+    silicon = session.context.get("silicon", {}) if session else {}
+
+    return QueryResponse(
+        text=response_text,
+        session_id=request.session_id,
+        resonance=wl.get("resonance", 0.0),
+        density=wl.get("density", 0.0),
+        safe=wl.get("safe", True),
+        silicon=silicon,
+        latency_ms=round(latency, 2),
+        dimension=silicon.get("dimension", 7),
+    )
 
 
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
-    """Health check endpoint."""
-    return gateway.health()
+    """Health check with real hardware status."""
+    if _runtime is None:
+        return HealthResponse(
+            status="booting",
+            version="1.618.2",
+            uptime_seconds=0,
+            healthy=False,
+        )
+
+    health = _runtime.asios.governor.check_health()
+    gpu = _runtime.asios.governor.monitor.query_gpu()
+    uptime = time.time() - getattr(_runtime, "_start_time", time.time())
+
+    return HealthResponse(
+        status="healthy" if health.get("healthy") else "degraded",
+        version="1.618.2",
+        uptime_seconds=round(uptime, 1),
+        gpu_available=gpu.available,
+        gpu_name=gpu.name if gpu.available else "",
+        healthy=health.get("healthy", False),
+        warnings=health.get("warnings", []),
+    )
+
+
+@app.get("/status")
+async def full_status():
+    """Full runtime status from all 4 layers + inference router."""
+    if _runtime is None:
+        return {"booted": False}
+    return _runtime.status()
+
+
+@app.get("/silicon")
+async def silicon_status():
+    """Inference router capabilities and dispatch statistics."""
+    if _runtime is None or _runtime.inference_router is None:
+        return {"available": False}
+    return {
+        "available": True,
+        **_runtime.inference_router.stats(),
+    }
 
 
 @app.get("/api/status")
 async def api_status():
-    """Simple status endpoint for Docker health checks."""
-    return {"status": "ok"}
+    """Simple status for Docker health checks."""
+    return {"status": "ok", "booted": _runtime is not None and _runtime._booted}
 
 
-# =============================================================================
-# MAIN
-# =============================================================================
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
 
-def run_server(host: str = "127.0.0.1", port: int = 8009):
+def run_server(host: str = "0.0.0.0", port: int = 8009):
     """Run the substrate gateway server."""
     import uvicorn
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(
+        "server.substrate_gateway:app",
+        host=host,
+        port=port,
+        log_level="info",
+    )
 
 
 if __name__ == "__main__":

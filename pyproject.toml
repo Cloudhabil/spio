@@ -43,12 +43,19 @@ dev = [
     "ruff>=0.1.0",
     "mypy>=1.0.0",
 ]
+server = [
+    "fastapi>=0.100.0",
+    "uvicorn[standard]>=0.23.0",
+]
 gpu = [
     "torch>=2.0.0",
     "transformers>=4.30.0",
 ]
+npu = [
+    "openvino>=2024.0.0",
+]
 full = [
-    "sovereign-pio[dev,gpu]",
+    "sovereign-pio[dev,server,gpu,npu]",
 ]
 
 [project.scripts]
@@ -56,9 +63,9 @@ spio = "sovereign_pio.cli:main"
 sovereign-pio = "sovereign_pio.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/YOUR_USERNAME/sovereign-pio"
-Documentation = "https://github.com/YOUR_USERNAME/sovereign-pio/docs"
-Repository = "https://github.com/YOUR_USERNAME/sovereign-pio"
+Homepage = "https://github.com/Cloudhabil/spio"
+Documentation = "https://github.com/Cloudhabil/spio/tree/main/docs"
+Repository = "https://github.com/Cloudhabil/spio"
 
 [tool.setuptools.packages.find]
 where = ["src"]
