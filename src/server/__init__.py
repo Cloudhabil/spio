@@ -5,6 +5,8 @@ FastAPI-based gateway wired to SovereignRuntime.
 """
 
 from .substrate_gateway import (
+    AppExecuteRequest,
+    AppExecuteResponse,
     HealthResponse,
     QueryRequest,
     QueryResponse,
@@ -13,9 +15,11 @@ from .substrate_gateway import (
 )
 
 __all__ = [
+    "AppExecuteRequest",
+    "AppExecuteResponse",
+    "HealthResponse",
     "QueryRequest",
     "QueryResponse",
-    "HealthResponse",
     "app",
     "run_server",
 ]

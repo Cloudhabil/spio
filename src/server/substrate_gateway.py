@@ -56,6 +56,26 @@ class QueryResponse(BaseModel):
     dimension: int = 7
 
 
+class AppExecuteRequest(BaseModel):
+    """Request to execute an IIAS app."""
+    app_name: str
+    query: str = ""
+
+
+class AppExecuteResponse(BaseModel):
+    """Response from IIAS app execution."""
+    app_id: int
+    app_name: str
+    category: str
+    dimension: int
+    dimension_name: str
+    silicon_target: str
+    silicon_device: str = ""
+    silicon_elapsed_ms: float = 0.0
+    response: str = ""
+    success: bool = True
+
+
 class HealthResponse(BaseModel):
     """Health check response."""
     status: str
@@ -165,6 +185,40 @@ async def substrate_query(request: QueryRequest):
         latency_ms=round(latency, 2),
         dimension=silicon.get("dimension", 7),
     )
+
+
+@app.post("/app/execute", response_model=AppExecuteResponse)
+async def execute_app(request: AppExecuteRequest):
+    """
+    Execute an IIAS app through real silicon.
+
+    Routes the app's category to a dimension, dispatches to the appropriate
+    silicon target (NPU/CPU/GPU), and optionally runs LLM reasoning with
+    dimension-aware parameters.
+    """
+    if _runtime is None:
+        raise HTTPException(status_code=503, detail="Runtime not booted")
+    if _runtime.app_executor is None:
+        raise HTTPException(status_code=501, detail="AppExecutor not available")
+
+    try:
+        result = await _runtime.app_executor.execute(
+            app_name=request.app_name,
+            query=request.query,
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    return AppExecuteResponse(**result.to_dict())
+
+
+@app.get("/app/list")
+async def list_apps():
+    """List all IIAS apps with their execution targets."""
+    if _runtime is None or _runtime.app_executor is None:
+        return {"apps": [], "count": 0}
+    apps = _runtime.app_executor.list_executable()
+    return {"apps": apps, "count": len(apps)}
 
 
 @app.get("/health", response_model=HealthResponse)

@@ -6,18 +6,20 @@ Implements dimension-based routing and multi-model orchestration.
 """
 
 import json
-import time
-from dataclasses import dataclass, field
-from typing import Optional, List, Dict, Any, AsyncIterator
-from enum import Enum
-from pathlib import Path
-
-import httpx
 
 # Import from parent
 import sys
+import time
+from collections.abc import AsyncIterator
+from dataclasses import dataclass, field
+from enum import Enum
+from pathlib import Path
+from typing import Any
+
+import httpx
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from sovereign_pio.constants import PHI, DIMENSION_NAMES, DIMENSION_SILICON
+from sovereign_pio.constants import DIMENSION_NAMES, DIMENSION_SILICON, PHI
 
 
 class ModelProvider(Enum):
@@ -63,7 +65,7 @@ class ReasoningResult:
     tokens_in: int = 0
     tokens_out: int = 0
     duration_ms: float = 0
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 class LLMClient:
@@ -81,10 +83,10 @@ class LLMClient:
     async def generate(
         self,
         prompt: str,
-        system: Optional[str] = None,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-    ) -> Dict[str, Any]:
+        system: str | None = None,
+        temperature: float | None = None,
+        max_tokens: int | None = None,
+    ) -> dict[str, Any]:
         """Generate a response from the LLM."""
 
         temp = temperature if temperature is not None else self.config.temperature
@@ -100,10 +102,10 @@ class LLMClient:
     async def _generate_ollama(
         self,
         prompt: str,
-        system: Optional[str],
+        system: str | None,
         temperature: float,
         max_tokens: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate using Ollama."""
 
         payload = {
@@ -140,10 +142,10 @@ class LLMClient:
     async def _generate_openai(
         self,
         prompt: str,
-        system: Optional[str],
+        system: str | None,
         temperature: float,
         max_tokens: int,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Generate using OpenAI."""
 
         messages = []
@@ -178,7 +180,7 @@ class LLMClient:
     async def stream(
         self,
         prompt: str,
-        system: Optional[str] = None,
+        system: str | None = None,
     ) -> AsyncIterator[str]:
         """Stream response tokens."""
 
@@ -192,7 +194,7 @@ class LLMClient:
     async def _stream_ollama(
         self,
         prompt: str,
-        system: Optional[str],
+        system: str | None,
     ) -> AsyncIterator[str]:
         """Stream from Ollama."""
 
@@ -218,7 +220,7 @@ class LLMClient:
     async def _stream_openai(
         self,
         prompt: str,
-        system: Optional[str],
+        system: str | None,
     ) -> AsyncIterator[str]:
         """Stream from OpenAI."""
 
@@ -272,7 +274,7 @@ class ReasoningEngine:
         12: ["unification", "transcendence", "holistic"],
     }
 
-    def __init__(self, config: Optional[ModelConfig] = None):
+    def __init__(self, config: ModelConfig | None = None):
         self.config = config or ModelConfig.ollama()
         self.client = LLMClient(self.config)
         self.phi = PHI
@@ -313,29 +315,56 @@ class ReasoningEngine:
         base = prompts.get(dimension, prompts[7])
         return f"{base}\n\nOperate with PHI-based determinism. Be precise and consistent."
 
+    # Silicon-aware model profiles: adjust parameters based on target hardware
+    SILICON_PROFILES: dict[str, dict[str, Any]] = {
+        "NPU": {"max_tokens": 256, "temperature": 0.3},   # Edge: fast, precise
+        "CPU": {"max_tokens": 1024, "temperature": 0.5},   # Balanced
+        "GPU": {"max_tokens": 2048, "temperature": 0.7},   # Full: creative
+    }
+
     async def reason(
         self,
         query: str,
         task_type: str = "reasoning",
-        context: Optional[str] = None,
-        temperature: Optional[float] = None,
+        context: str | None = None,
+        temperature: float | None = None,
+        dimension: int | None = None,
+        silicon_hint: str | None = None,
     ) -> ReasoningResult:
         """
         Perform reasoning on a query.
+
+        When dimension or silicon_hint is provided (from InferenceRouter
+        middleware), model parameters are adjusted to match the target
+        silicon:
+            NPU (D1-D4): low temperature, fewer tokens — fast, precise
+            CPU (D5-D8): balanced parameters
+            GPU (D9-D12): high temperature, more tokens — creative
 
         Args:
             query: The query to reason about
             task_type: Type of task for dimension routing
             context: Optional context to include
-            temperature: Override temperature
+            temperature: Override temperature (takes priority over profile)
+            dimension: Override dimension (from silicon audit middleware)
+            silicon_hint: Target silicon ("NPU"/"CPU"/"GPU") for profile
 
         Returns:
             ReasoningResult with response and metadata
         """
-        # Route to dimension
-        dimension = self.route_to_dimension(task_type)
+        # Use provided dimension or route from task_type
+        if dimension is not None:
+            dimension = max(1, min(12, dimension))
+        else:
+            dimension = self.route_to_dimension(task_type)
+
         dimension_name = DIMENSION_NAMES[dimension]
-        silicon = DIMENSION_SILICON[dimension]
+        silicon = silicon_hint or DIMENSION_SILICON[dimension]
+
+        # Apply silicon profile: adjust temperature and max_tokens
+        profile = self.SILICON_PROFILES.get(silicon, self.SILICON_PROFILES["CPU"])
+        effective_temp = temperature if temperature is not None else profile["temperature"]
+        effective_tokens = profile["max_tokens"]
 
         # Build prompt
         prompt = query
@@ -345,11 +374,12 @@ class ReasoningEngine:
         # Get system prompt for dimension
         system = self.get_system_prompt(dimension)
 
-        # Generate response
+        # Generate response with silicon-aware parameters
         result = await self.client.generate(
             prompt=prompt,
             system=system,
-            temperature=temperature,
+            temperature=effective_temp,
+            max_tokens=effective_tokens,
         )
 
         return ReasoningResult(
@@ -362,7 +392,13 @@ class ReasoningEngine:
             tokens_in=result["tokens_in"],
             tokens_out=result["tokens_out"],
             duration_ms=result["duration_ms"],
-            metadata={"task_type": task_type, "context_provided": context is not None},
+            metadata={
+                "task_type": task_type,
+                "context_provided": context is not None,
+                "silicon_profile": silicon,
+                "effective_temperature": effective_temp,
+                "effective_max_tokens": effective_tokens,
+            },
         )
 
     async def reason_stream(
@@ -386,8 +422,8 @@ class MultiModelOrchestrator:
     """
 
     def __init__(self):
-        self.models: Dict[int, ModelConfig] = {}
-        self.engines: Dict[int, ReasoningEngine] = {}
+        self.models: dict[int, ModelConfig] = {}
+        self.engines: dict[int, ReasoningEngine] = {}
         self._default_config = ModelConfig.ollama()
 
     def set_model(self, dimension: int, config: ModelConfig):

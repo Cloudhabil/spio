@@ -958,3 +958,182 @@ if __name__ == "__main__":
     print(f"IIAS initialized: {init['status']}")
 
     print("\nAll tests passed!")
+
+
+# ============================================================================
+# APP EXECUTOR — Invoke IIAS apps through real silicon
+# ============================================================================
+
+# Maps IIAS category -> best dimension for that workload
+APP_CATEGORY_DIMENSIONS: dict[str, int] = {
+    "foundation": 1,      # PERCEPTION — core routing
+    "infrastructure": 4,  # STABILITY — infra reliability
+    "edge": 2,            # ATTENTION — edge focus
+    "ai_ml": 8,           # PREDICTION — ML inference
+    "security": 3,        # SECURITY — validation
+    "business": 6,        # HARMONY — coordination
+    "data": 5,            # COMPRESSION — data handling
+    "iot": 2,             # ATTENTION — device focus
+    "communication": 6,   # HARMONY — message coordination
+    "developer": 7,       # REASONING — code analysis
+    "scientific": 9,      # CREATIVITY — simulation
+    "personal": 10,       # WISDOM — judgment
+    "finance": 8,         # PREDICTION — forecasting
+}
+
+
+@dataclass
+class AppResult:
+    """Result from executing an IIAS app."""
+
+    app_id: int
+    app_name: str
+    category: str
+    dimension: int
+    dimension_name: str
+    silicon_target: str
+    silicon_device: str = ""
+    silicon_elapsed_ms: float = 0.0
+    response: str = ""
+    success: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "app_id": self.app_id,
+            "app_name": self.app_name,
+            "category": self.category,
+            "dimension": self.dimension,
+            "dimension_name": self.dimension_name,
+            "silicon_target": self.silicon_target,
+            "silicon_device": self.silicon_device,
+            "silicon_elapsed_ms": round(self.silicon_elapsed_ms, 4),
+            "response": self.response,
+            "success": self.success,
+        }
+
+
+class AppExecutor:
+    """
+    Execute IIAS apps through real silicon.
+
+    Each app is mapped to a dimension (via its category), which determines
+    the silicon target (NPU/CPU/GPU). The InferenceRouter dispatches to
+    real hardware, and the optional ReasoningEngine provides LLM reasoning
+    tailored to the dimension's system prompt.
+
+    Usage:
+        executor = AppExecutor(inference_router, reasoning_engine)
+        result = await executor.execute("dimension_router", "Route 100MB of data")
+    """
+
+    def __init__(
+        self,
+        inference_router=None,
+        reasoning_engine=None,
+    ):
+        self.inference_router = inference_router
+        self.reasoning_engine = reasoning_engine
+        self.registry = AppRegistry()
+        self._execution_count: dict[str, int] = {}
+
+    async def execute(
+        self,
+        app_name: str,
+        query: str = "",
+    ) -> AppResult:
+        """
+        Execute an IIAS app by name.
+
+        1. Look up app in registry
+        2. Map category -> dimension -> silicon target
+        3. Dispatch to InferenceRouter (if available)
+        4. Call ReasoningEngine (if available) with dimension-aware params
+        5. Return AppResult with silicon provenance
+
+        Args:
+            app_name: Name of the IIAS app (e.g., "dimension_router")
+            query: Input query or parameters for the app
+
+        Returns:
+            AppResult with silicon dispatch data and optional LLM response
+        """
+        app = self.registry.get_by_name(app_name)
+        if app is None:
+            return AppResult(
+                app_id=0,
+                app_name=app_name,
+                category="unknown",
+                dimension=7,
+                dimension_name="REASONING",
+                silicon_target="CPU",
+                response=f"Unknown app: {app_name}",
+                success=False,
+            )
+
+        dimension = APP_CATEGORY_DIMENSIONS.get(app.category, 7)
+        from sovereign_pio.constants import DIMENSION_NAMES, DIMENSION_SILICON
+        dim_name = DIMENSION_NAMES[dimension]
+        silicon_target = DIMENSION_SILICON[dimension]
+
+        # Silicon dispatch
+        device = ""
+        elapsed = 0.0
+        if self.inference_router is not None:
+            import numpy as np
+            data = np.random.RandomState(app.id).randn(1, 384).astype(np.float32)
+            dispatch = self.inference_router.dispatch(dimension=dimension, data=data)
+            device = dispatch.device
+            elapsed = dispatch.elapsed_ms
+
+        # LLM reasoning (dimension-aware)
+        response = ""
+        if self.reasoning_engine is not None and query:
+            result = await self.reasoning_engine.reason(
+                query=f"[{app.name}] {query}",
+                task_type=app.category,
+                dimension=dimension,
+                silicon_hint=silicon_target,
+            )
+            response = result.response
+        elif query:
+            response = f"[{app.name}] Executed on {silicon_target} (D{dimension}/{dim_name}): {query}"
+
+        self._execution_count[app_name] = self._execution_count.get(app_name, 0) + 1
+
+        return AppResult(
+            app_id=app.id,
+            app_name=app.name,
+            category=app.category,
+            dimension=dimension,
+            dimension_name=dim_name,
+            silicon_target=silicon_target,
+            silicon_device=device,
+            silicon_elapsed_ms=elapsed,
+            response=response,
+            success=True,
+        )
+
+    def list_executable(self) -> list[dict[str, Any]]:
+        """List all apps with their execution targets."""
+        from sovereign_pio.constants import DIMENSION_NAMES, DIMENSION_SILICON
+        result = []
+        for app in self.registry.list_all():
+            dim = APP_CATEGORY_DIMENSIONS.get(app.category, 7)
+            result.append({
+                "id": app.id,
+                "name": app.name,
+                "category": app.category,
+                "dimension": dim,
+                "dimension_name": DIMENSION_NAMES[dim],
+                "silicon": DIMENSION_SILICON[dim],
+                "status": app.status,
+            })
+        return result
+
+    def stats(self) -> dict[str, Any]:
+        """Execution statistics."""
+        return {
+            "total_apps": len(self.registry.list_all()),
+            "total_executions": sum(self._execution_count.values()),
+            "executions_by_app": self._execution_count.copy(),
+        }

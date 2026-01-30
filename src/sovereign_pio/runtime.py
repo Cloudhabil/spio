@@ -65,6 +65,7 @@ class SovereignRuntime:
         self.memory = None
         self.reasoning_engine = None
         self.inference_router = None
+        self.app_executor = None
         self.asios = None
         self.pio = None
         self.gateway = None
@@ -160,6 +161,21 @@ class SovereignRuntime:
             logger.warning("InferenceRouter unavailable: %s", exc)
             self.inference_router = None
 
+        # --- 2d. IIAS App Executor ---
+        try:
+            from iias.iias_core import AppExecutor
+            self.app_executor = AppExecutor(
+                inference_router=self.inference_router,
+                reasoning_engine=self.reasoning_engine,
+            )
+            logger.info(
+                "AppExecutor: %d apps available",
+                len(self.app_executor.registry.list_all()),
+            )
+        except Exception as exc:
+            logger.warning("AppExecutor unavailable: %s", exc)
+            self.app_executor = None
+
         # --- 3. ASIOS ---
         from asios import ASIOSRuntime
         self.asios = ASIOSRuntime()
@@ -248,6 +264,8 @@ class SovereignRuntime:
         result["wavelength_gate"] = self.wavelength_gate.get_stats()
         if self.inference_router is not None:
             result["inference_router"] = self.inference_router.stats()
+        if self.app_executor is not None:
+            result["app_executor"] = self.app_executor.stats()
         return result
 
     # ------------------------------------------------------------------
@@ -362,6 +380,16 @@ class SovereignRuntime:
     # Internal: silicon audit middleware
     # ------------------------------------------------------------------
 
+    # Intent → dimension mapping (works without ReasoningEngine)
+    INTENT_DIMENSION_MAP: dict[str, int] = {
+        "query": 7,          # REASONING
+        "command": 4,        # STABILITY
+        "creative": 9,       # CREATIVITY
+        "analysis": 7,       # REASONING
+        "conversation": 6,   # HARMONY
+        "unknown": 7,        # REASONING (default)
+    }
+
     async def _silicon_audit_middleware(self, pio, session, text):
         """Middleware: run a silicon probe and record dispatch data."""
 
@@ -371,12 +399,12 @@ class SovereignRuntime:
         # Embed the text into a vector using memory's embedder
         embedding = self.memory.embedder.embed(text)
 
-        # Detect dimension from intent (use reasoning engine's routing)
-        dimension = 7  # default: reasoning
+        # Detect dimension: use reasoning engine if available, else intent map
+        intent = session.context.get("intent", "reasoning")
         if self.reasoning_engine is not None:
-            dimension = self.reasoning_engine.route_to_dimension(
-                session.context.get("intent", "reasoning"),
-            )
+            dimension = self.reasoning_engine.route_to_dimension(intent)
+        else:
+            dimension = self.INTENT_DIMENSION_MAP.get(intent, 7)
 
         # Dispatch to real silicon
         result = self.inference_router.dispatch(

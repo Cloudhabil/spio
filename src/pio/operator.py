@@ -5,15 +5,15 @@ Full async implementation with session management, intent routing,
 and integration with GPIA reasoning and Moltbot channels.
 """
 
-import asyncio
-import uuid
+import sys
 import time
+import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Any, Callable, Awaitable
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
-import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
@@ -42,8 +42,8 @@ class Message:
     role: str  # "user", "assistant", "system"
     content: str
     timestamp: float = field(default_factory=time.time)
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    intent: Optional[IntentType] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    intent: IntentType | None = None
 
 
 @dataclass
@@ -53,19 +53,19 @@ class Session:
     """
     id: str
     state: SessionState = SessionState.CREATED
-    history: List[Message] = field(default_factory=list)
-    context: Dict[str, Any] = field(default_factory=dict)
+    history: list[Message] = field(default_factory=list)
+    context: dict[str, Any] = field(default_factory=dict)
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
-    channel: Optional[str] = None
-    user_id: Optional[str] = None
+    channel: str | None = None
+    user_id: str | None = None
 
     def add_message(
         self,
         role: str,
         content: str,
-        intent: Optional[IntentType] = None,
-        metadata: Optional[Dict] = None,
+        intent: IntentType | None = None,
+        metadata: dict | None = None,
     ) -> Message:
         """Add a message to the session history."""
         msg = Message(
@@ -79,7 +79,7 @@ class Session:
         self.updated_at = time.time()
         return msg
 
-    def get_recent_history(self, n: int = 10) -> List[Message]:
+    def get_recent_history(self, n: int = 10) -> list[Message]:
         """Get the n most recent messages."""
         return self.history[-n:]
 
@@ -134,7 +134,7 @@ class IntentDetector:
 
 
 # Type alias for middleware
-Middleware = Callable[["PIOOperator", Session, str], Awaitable[Optional[str]]]
+Middleware = Callable[["PIOOperator", Session, str], Awaitable[str | None]]
 
 
 class PIOOperator:
@@ -150,9 +150,9 @@ class PIOOperator:
     """
 
     def __init__(self):
-        self.sessions: Dict[str, Session] = {}
+        self.sessions: dict[str, Session] = {}
         self.intent_detector = IntentDetector()
-        self._middleware: List[Middleware] = []
+        self._middleware: list[Middleware] = []
         self._reasoning_engine = None
         self._memory = None
 
@@ -173,9 +173,9 @@ class PIOOperator:
 
     def create_session(
         self,
-        session_id: Optional[str] = None,
-        channel: Optional[str] = None,
-        user_id: Optional[str] = None,
+        session_id: str | None = None,
+        channel: str | None = None,
+        user_id: str | None = None,
     ) -> Session:
         """Create a new session."""
         sid = session_id or str(uuid.uuid4())
@@ -184,15 +184,15 @@ class PIOOperator:
         self.sessions[sid] = session
         return session
 
-    def get_session(self, session_id: str) -> Optional[Session]:
+    def get_session(self, session_id: str) -> Session | None:
         """Get an existing session."""
         return self.sessions.get(session_id)
 
     def get_or_create_session(
         self,
         session_id: str,
-        channel: Optional[str] = None,
-        user_id: Optional[str] = None,
+        channel: str | None = None,
+        user_id: str | None = None,
     ) -> Session:
         """Get existing session or create new one."""
         session = self.get_session(session_id)
@@ -212,8 +212,8 @@ class PIOOperator:
         self,
         session_id: str,
         user_input: str,
-        channel: Optional[str] = None,
-        user_id: Optional[str] = None,
+        channel: str | None = None,
+        user_id: str | None = None,
     ) -> str:
         """
         Process user input and return a response.
@@ -240,6 +240,9 @@ class PIOOperator:
 
         # Detect intent
         intent = self.intent_detector.detect(user_input)
+
+        # Store intent in context so middleware can read it
+        session.context["intent"] = intent.value
 
         # Add user message to history
         session.add_message("user", user_input, intent=intent)
@@ -282,6 +285,11 @@ class PIOOperator:
             }
             task_type = task_map.get(intent, "reasoning")
 
+            # Read silicon context from middleware (if InferenceRouter ran)
+            silicon = session.context.get("silicon", {})
+            dim_hint = silicon.get("dimension")
+            silicon_hint = silicon.get("target_silicon")
+
             # Include conversation context
             context = session.format_history(5) if len(session.history) > 1 else None
 
@@ -298,7 +306,23 @@ class PIOOperator:
                 query=user_input,
                 task_type=task_type,
                 context=context,
+                dimension=dim_hint,
+                silicon_hint=silicon_hint,
             )
+
+            # Store reasoning metadata in session context
+            session.context["reasoning"] = {
+                "dimension": result.dimension,
+                "dimension_name": result.dimension_name,
+                "silicon": result.silicon,
+                "model": result.model,
+                "tokens_in": result.tokens_in,
+                "tokens_out": result.tokens_out,
+                "duration_ms": result.duration_ms,
+                "task_type": task_type,
+                "silicon_profile": result.metadata.get("silicon_profile"),
+            }
+
             return result.response
 
         # Fallback response
@@ -340,7 +364,7 @@ class PIOOperator:
             session.add_message("assistant", response)
             yield response
 
-    def stats(self) -> Dict[str, Any]:
+    def stats(self) -> dict[str, Any]:
         """Get operator statistics."""
         active = sum(1 for s in self.sessions.values() if s.state == SessionState.ACTIVE)
         total_messages = sum(len(s.history) for s in self.sessions.values())
@@ -357,13 +381,13 @@ class PIOOperator:
 
 # Pre-built middleware
 
-async def logging_middleware(pio: PIOOperator, session: Session, input: str) -> Optional[str]:
+async def logging_middleware(pio: PIOOperator, session: Session, input: str) -> str | None:
     """Log all messages."""
     print(f"[LOG] Session {session.id}: {input[:50]}...")
     return None  # Continue to next middleware
 
 
-async def memory_store_middleware(pio: PIOOperator, session: Session, input: str) -> Optional[str]:
+async def memory_store_middleware(pio: PIOOperator, session: Session, input: str) -> str | None:
     """Store important messages in memory."""
     if pio._memory and len(input) > 50:  # Store substantial messages
         key = f"msg_{session.id}_{int(time.time())}"
