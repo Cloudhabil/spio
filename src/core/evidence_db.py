@@ -15,11 +15,14 @@ Author: SPIO Framework via Brahim's Calculator
 
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 import os
 import sqlite3
 import time
 from dataclasses import dataclass
+from typing import Any
 
 from sovereign_pio.constants import (
     BETA,
@@ -65,11 +68,14 @@ class EvidenceDB:
 
     SCHEMA_VERSION = "1.0.0"
 
+    _GENESIS_HASH = "0" * 64
+
     def __init__(self, path: str):
         self.path = path
         self.conn: sqlite3.Connection | None = None
         self._op_count = 0
         self._start_time = 0.0
+        self._last_hash = self._GENESIS_HASH
 
     def open(self) -> None:
         """Open database and create schema."""
@@ -106,7 +112,8 @@ class EvidenceDB:
                 dimension INTEGER,
                 latency_ms REAL,
                 bandwidth_gbps REAL,
-                verified INTEGER
+                verified INTEGER,
+                chain_hash TEXT DEFAULT ''
             );
             CREATE TABLE summary (
                 metric TEXT PRIMARY KEY,
@@ -190,14 +197,16 @@ class EvidenceDB:
         return results
 
     def record_operation(self, op: OperationRecord) -> None:
-        """Record a single SPIO operation."""
+        """Record a single SPIO operation with chain hash."""
         assert self.conn is not None
+        chain = self._compute_chain_hash(op)
         self.conn.execute(
-            "INSERT INTO operations VALUES (?,?,?,?,?,?,?,?)",
+            "INSERT INTO operations VALUES (?,?,?,?,?,?,?,?,?)",
             (op.op_id, op.input_hash, op.output_hash,
              op.silicon, op.dimension, op.latency_ms,
-             op.bandwidth_gbps, int(op.verified)),
+             op.bandwidth_gbps, int(op.verified), chain),
         )
+        self._last_hash = chain
         self._op_count += 1
         if self._op_count % 1000 == 0:
             self.conn.commit()
@@ -205,19 +214,89 @@ class EvidenceDB:
     def record_operations_batch(
         self, ops: list[OperationRecord],
     ) -> None:
-        """Record multiple operations efficiently."""
+        """Record multiple operations efficiently with chain hashes."""
         assert self.conn is not None
-        self.conn.executemany(
-            "INSERT INTO operations VALUES (?,?,?,?,?,?,?,?)",
-            [
+        rows: list[tuple[Any, ...]] = []
+        for op in ops:
+            chain = self._compute_chain_hash(op)
+            rows.append(
                 (op.op_id, op.input_hash, op.output_hash,
                  op.silicon, op.dimension, op.latency_ms,
-                 op.bandwidth_gbps, int(op.verified))
-                for op in ops
-            ],
+                 op.bandwidth_gbps, int(op.verified), chain)
+            )
+            self._last_hash = chain
+        self.conn.executemany(
+            "INSERT INTO operations VALUES (?,?,?,?,?,?,?,?,?)",
+            rows,
         )
         self._op_count += len(ops)
         self.conn.commit()
+
+    def _compute_chain_hash(self, op: OperationRecord) -> str:
+        """SHA-256(previous_hash || op JSON)."""
+        payload = json.dumps(
+            {
+                "op_id": op.op_id,
+                "input_hash": op.input_hash,
+                "output_hash": op.output_hash,
+                "silicon": op.silicon,
+                "dimension": op.dimension,
+                "latency_ms": op.latency_ms,
+                "bandwidth_gbps": op.bandwidth_gbps,
+                "verified": op.verified,
+            },
+            sort_keys=True,
+        )
+        blob = self._last_hash + payload
+        return hashlib.sha256(blob.encode()).hexdigest()
+
+    def verify_chain(self) -> dict[str, Any]:
+        """Verify hash chain integrity of operations table."""
+        assert self.conn is not None
+        cur = self.conn.execute(
+            "SELECT op_id, input_hash, output_hash, silicon,"
+            " dimension, latency_ms, bandwidth_gbps, verified,"
+            " chain_hash FROM operations ORDER BY op_id"
+        )
+        prev = self._GENESIS_HASH
+        checked = 0
+        for row in cur:
+            op = OperationRecord(
+                op_id=row[0],
+                input_hash=row[1],
+                output_hash=row[2],
+                silicon=row[3],
+                dimension=row[4],
+                latency_ms=row[5],
+                bandwidth_gbps=row[6],
+                verified=bool(row[7]),
+            )
+            payload = json.dumps(
+                {
+                    "op_id": op.op_id,
+                    "input_hash": op.input_hash,
+                    "output_hash": op.output_hash,
+                    "silicon": op.silicon,
+                    "dimension": op.dimension,
+                    "latency_ms": op.latency_ms,
+                    "bandwidth_gbps": op.bandwidth_gbps,
+                    "verified": op.verified,
+                },
+                sort_keys=True,
+            )
+            expected = hashlib.sha256(
+                (prev + payload).encode(),
+            ).hexdigest()
+            stored = row[8]
+            if stored and expected != stored:
+                return {
+                    "valid": False,
+                    "records_checked": checked,
+                    "first_break": op.op_id,
+                }
+            prev = stored if stored else expected
+            checked += 1
+        return {"valid": True, "records_checked": checked}
 
     def finalize(self) -> dict[str, float]:
         """Compute and store summary statistics."""

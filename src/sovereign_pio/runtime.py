@@ -41,6 +41,11 @@ class RuntimeConfig:
     wavelength_enforce: bool = True      # block requests that fail safety gate
     memory_persist_path: str | None = None
 
+    # EU AI Act compliance (Art. 12, 14)
+    audit_db_path: str = "data/compliance_audit.db"
+    retention_days: int = 2555           # 7 years (financial sector)
+    guardian_enabled: bool = True
+
 
 # ---------------------------------------------------------------------------
 # SovereignRuntime
@@ -70,6 +75,12 @@ class SovereignRuntime:
         self.pio = None
         self.gateway = None
 
+        # Compliance layer (Art. 12, 14, 9)
+        self.audit_log = None
+        self.guardian_gate = None
+        self.stop_switch = None
+        self.risk_registry = None
+
         self._booted = False
 
     # ------------------------------------------------------------------
@@ -87,8 +98,34 @@ class SovereignRuntime:
             threshold=self.config.wavelength_threshold,
         )
 
-        # --- 2. GPIA: Memory ---
+        # --- 1b. Compliance layer (EU AI Act) ---
         from pathlib import Path
+
+        from sovereign_pio.compliance.human_oversight import (
+            GuardianGate,
+            StopSwitch,
+        )
+        from sovereign_pio.compliance.record_keeping import (
+            ComplianceAuditLog,
+        )
+        from sovereign_pio.compliance.risk_management import (
+            RiskRegistry,
+        )
+
+        audit_db = Path(self.config.audit_db_path)
+        self.audit_log = ComplianceAuditLog(
+            audit_db,
+            retention_days=self.config.retention_days,
+        )
+        self.guardian_gate = GuardianGate(self.audit_log)
+        self.stop_switch = StopSwitch(self.audit_log)
+        self.risk_registry = RiskRegistry(
+            self.audit_log,
+            audit_db.parent / "risk_registry.db",
+        )
+        logger.info("Compliance layer booted (audit=%s)", audit_db)
+
+        # --- 2. GPIA: Memory ---
 
         from gpia.memory import Memory, SimpleEmbedder
 
@@ -211,13 +248,18 @@ class SovereignRuntime:
         if self.reasoning_engine is not None:
             self.pio.set_reasoning_engine(self.reasoning_engine)
 
-        # Middleware: safety -> wavelength -> silicon audit -> logging -> memory_store
+        # Middleware: compliance -> safety -> wavelength -> silicon
+        #            -> logging -> memory_store -> compliance output
+        if self.config.guardian_enabled:
+            self.pio.use(self._compliance_guardian_middleware)
+        self.pio.use(self._compliance_input_audit_middleware)
         self.pio.use(self._asios_safety_middleware)
         self.pio.use(self._wavelength_audit_middleware)
         if self.inference_router is not None:
             self.pio.use(self._silicon_audit_middleware)
         self.pio.use(logging_middleware)
         self.pio.use(memory_store_middleware)
+        self.pio.use(self._compliance_output_audit_middleware)
 
         # --- 5. Moltbot Gateway + channel ---
         from moltbot.gateway import Gateway
@@ -257,6 +299,25 @@ class SovereignRuntime:
 
     async def shutdown(self) -> None:
         """Graceful teardown of all layers."""
+        # Art. 12: verify audit chain integrity before shutdown
+        if self.audit_log is not None:
+            chain_result = self.audit_log.verify_chain()
+            if chain_result.get("valid"):
+                logger.info(
+                    "Audit chain valid (%d records)",
+                    chain_result["records_checked"],
+                )
+            else:
+                logger.error(
+                    "Audit chain BROKEN at record %s after %d",
+                    chain_result.get("first_break"),
+                    chain_result.get("records_checked", 0),
+                )
+            self.audit_log.close()
+
+        if self.risk_registry is not None:
+            self.risk_registry.close()
+
         if self.gateway is not None:
             await self.gateway.stop()
         if self.reasoning_engine is not None:
@@ -285,6 +346,18 @@ class SovereignRuntime:
             result["inference_router"] = self.inference_router.stats()
         if self.app_executor is not None:
             result["app_executor"] = self.app_executor.stats()
+        if self.audit_log is not None:
+            result["compliance"] = {
+                "audit_log": self.audit_log.stats(),
+                "risk_posture": (
+                    self.risk_registry.assess()
+                    if self.risk_registry else {}
+                ),
+                "halted": (
+                    self.stop_switch.is_halted()
+                    if self.stop_switch else False
+                ),
+            }
         return result
 
     # ------------------------------------------------------------------
@@ -433,3 +506,90 @@ class SovereignRuntime:
 
         session.context["silicon"] = result.to_dict()
         return None  # audit — continue pipeline
+
+    # ------------------------------------------------------------------
+    # Internal: compliance middleware (EU AI Act)
+    # ------------------------------------------------------------------
+
+    async def _compliance_guardian_middleware(
+        self, pio, session, text,
+    ):
+        """Art. 14: Guardian gate evaluates every input."""
+        if self.guardian_gate is None:
+            return None
+
+        # StopSwitch check — if halted, block everything
+        if self.stop_switch and self.stop_switch.is_halted():
+            return (
+                "[COMPLIANCE] System halted by emergency stop. "
+                "A human operator must resume operation."
+            )
+
+        actor = session.context.get("user_id", "unknown")
+        context = dict(session.context)
+        decision = self.guardian_gate.evaluate(text, actor, context)
+        session.context["guardian"] = {
+            "action": decision.action,
+            "reason": decision.reason,
+            "sensitivity": decision.sensitivity,
+            "decision_id": decision.decision_id,
+        }
+
+        if decision.action == "block":
+            return (
+                f"[COMPLIANCE] Request blocked — {decision.reason}"
+            )
+        if decision.action == "escalate":
+            session.context["guardian_escalated"] = True
+            logger.warning(
+                "Guardian escalated: %s", decision.reason,
+            )
+        return None  # allow — continue pipeline
+
+    async def _compliance_input_audit_middleware(
+        self, pio, session, text,
+    ):
+        """Art. 12: Log every input to the compliance audit log."""
+        if self.audit_log is None:
+            return None
+
+        import hashlib
+        input_hash = hashlib.sha256(text.encode()).hexdigest()
+        sensitivity = (
+            session.context.get("guardian", {}).get(
+                "sensitivity", 0,
+            )
+        )
+        self.audit_log.record(
+            event_type="input_received",
+            actor=session.context.get("user_id", "unknown"),
+            detail={
+                "session_id": session.session_id,
+                "sensitivity": sensitivity,
+                "channel": session.context.get("channel", ""),
+            },
+            input_hash=input_hash,
+        )
+        return None  # continue pipeline
+
+    async def _compliance_output_audit_middleware(
+        self, pio, session, text,
+    ):
+        """Art. 12: Log output generation to the compliance audit log."""
+        if self.audit_log is None:
+            return None
+
+        # text at this stage is the user input (middleware runs pre-response),
+        # so we log a marker that the pipeline completed for this session.
+        self.audit_log.record(
+            event_type="pipeline_completed",
+            actor="system",
+            detail={
+                "session_id": session.session_id,
+                "guardian": session.context.get("guardian", {}),
+                "wavelength": session.context.get(
+                    "wavelength", {},
+                ),
+            },
+        )
+        return None  # continue pipeline
