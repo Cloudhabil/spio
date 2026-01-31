@@ -296,3 +296,62 @@ def spectral_dimensions(z: complex, k_max: int = 6) -> list[int]:
         dim = int(abs(d.imag)) % 12 + 1
         dims.append(dim)
     return dims
+
+
+# ---------------------------------------------------------------------------
+# N-Body Manifold functions (DOI: 10.5281/zenodo.18437705)
+# ---------------------------------------------------------------------------
+
+def mirror(x: int) -> int:
+    """Mirror operator M(x) = 214 - x. Involution."""
+    return 214 - x
+
+
+def brahim_subset_sums() -> list[int]:
+    """Compute the 369 distinct non-empty subset sums. Cached."""
+    from itertools import combinations
+
+    from .constants import BRAHIM_NUMBERS
+    sums: set[int] = set()
+    for r in range(1, 11):
+        for combo in combinations(BRAHIM_NUMBERS, r):
+            sums.add(sum(combo))
+    return sorted(sums)
+
+
+def max_bodies() -> dict:
+    """Return max N=27 with proof data."""
+    n_scales = len(brahim_subset_sums())
+    n = 27
+    pairs = n * (n - 1) // 2  # 351
+    return {
+        "max_n": n,
+        "pairs": pairs,
+        "scales": n_scales,
+        "proved": pairs <= n_scales,
+    }
+
+
+def triangle_product() -> float:
+    """Product invariant: phi^(-42)*phi^(-75)*phi^(-97) = phi^(-214)."""
+    return PHI ** (-214)
+
+
+def scale_level_counts() -> list[dict]:
+    """Distinct subset sums at each level k=1..10."""
+    from itertools import combinations
+
+    from .constants import BRAHIM_NUMBERS
+    result = []
+    for k in range(1, 11):
+        level_sums = {
+            sum(c) for c in combinations(BRAHIM_NUMBERS, k)
+        }
+        result.append({
+            "level": k,
+            "subsets": len(
+                list(combinations(BRAHIM_NUMBERS, k))
+            ),
+            "distinct": len(level_sums),
+        })
+    return result

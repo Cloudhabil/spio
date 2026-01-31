@@ -287,6 +287,49 @@ class DimensionRouter:
             "conservation": SUM_CONSTANT,
         }
 
+    def nbody_route(
+        self, n_agents: int, data_mb: float,
+    ) -> dict[str, Any]:
+        """Route N independent agents using constraint geometry.
+
+        Validates N <= 27, assigns Brahim scales to agent pairs,
+        and returns scale assignments with conservation audit.
+        """
+        from core.nbody_scales import ScaleHierarchy
+
+        hierarchy = ScaleHierarchy()
+        check = hierarchy.validate_concurrency(n_agents)
+        if not check["valid"]:
+            return {
+                "error": f"N={n_agents} exceeds ceiling 27",
+                "validation": check,
+            }
+
+        per_agent = data_mb / n_agents if n_agents > 0 else 0.0
+        assignments: list[dict[str, Any]] = []
+        scales = hierarchy.scales
+        for i in range(n_agents):
+            scale = scales[i % len(scales)]
+            assignments.append({
+                "agent": i,
+                "scale": scale,
+                "data_mb": per_agent,
+            })
+
+        tri = hierarchy.silicon_triangle()
+        product_audit = hierarchy.audit_product(
+            [42, 75, 97],
+        )
+
+        return {
+            "n_agents": n_agents,
+            "data_mb": data_mb,
+            "validation": check,
+            "assignments": assignments,
+            "triangle": tri,
+            "product_audit": product_audit,
+        }
+
     # Alias for backwards compatibility
     initialize = route
 
@@ -485,6 +528,7 @@ FOUNDATION_APPS = [
     IIASApp(3, "mirror_balancer", "foundation", "done", "core", "Balances mirror pairs (214 sum)"),
     IIASApp(4, "phi_saturator", "foundation", "done", "core", "PHI-based saturation curves"),
     IIASApp(5, "lucas_allocator", "foundation", "done", "core", "Allocates by Lucas sequence"),
+    IIASApp(126, "nbody_constraint_router", "foundation", "done", "core", "N-body constraint routing (max 27 agents)"),
 ]
 
 # Infrastructure apps (10)
@@ -794,7 +838,27 @@ class MirrorBalancer:
 
     def verify_conservation(self) -> bool:
         """Verify all pairs sum to 214."""
-        return all(left + right == self.sum_constant for left, right in self.pairs)
+        return all(
+            left + right == self.sum_constant
+            for left, right in self.pairs
+        )
+
+    def generating_triangle(self) -> dict[str, Any]:
+        """The unique triple {42,75,97} summing to 214."""
+        tri = (42, 75, 97)
+        return {
+            "vertices": tri,
+            "sum": sum(tri),
+            "equals_mirror": sum(tri) == SUM_CONSTANT,
+        }
+
+    def product_invariant(self) -> float:
+        """phi^(-214) -- the 3-body conservation constant."""
+        return PHI ** (-SUM_CONSTANT)
+
+    def silicon_triangle(self) -> dict[str, int]:
+        """Map triangle vertices to silicon: NPU=42, CPU=75, GPU=97."""
+        return {"NPU": 42, "CPU": 75, "GPU": 97}
 
 
 # ============================================================================
@@ -1173,12 +1237,38 @@ def _handle_phi_saturator(
     }
 
 
+def _handle_nbody_router(
+    query: str, ctx: AppContext,
+) -> dict[str, Any]:
+    """Foundation handler: N-body constraint router."""
+    from core.nbody_scales import ScaleHierarchy
+
+    n = int(_parse_numeric(query, 10.0))
+    hierarchy = ScaleHierarchy()
+    validation = hierarchy.validate_concurrency(n)
+    tri = hierarchy.silicon_triangle()
+    product = hierarchy.audit_product([42, 75, 97])
+    coverage = hierarchy.modular_coverage()
+
+    return {
+        "n_agents": n,
+        "validation": validation,
+        "triangle": tri,
+        "product_audit": product,
+        "modular_coverage": {
+            "covered": coverage["covered"],
+            "modulus": coverage["modulus"],
+        },
+    }
+
+
 FOUNDATION_HANDLERS: dict[str, Any] = {
     "dimension_router": _handle_dimension_router,
     "genesis_controller": _handle_genesis_controller,
     "mirror_balancer": _handle_mirror_balancer,
     "lucas_allocator": _handle_lucas_allocator,
     "phi_saturator": _handle_phi_saturator,
+    "nbody_constraint_router": _handle_nbody_router,
 }
 
 
@@ -1211,6 +1301,7 @@ class AppExecutor:
         self.context = context or AppContext()
         self.registry = AppRegistry()
         self._execution_count: dict[str, int] = {}
+        self._concurrent: int = 0
 
     async def execute(
         self,
@@ -1221,18 +1312,43 @@ class AppExecutor:
         Execute an IIAS app by name.
 
         1. Look up app in registry
-        2. Map category -> dimension -> silicon target
-        3. If foundation handler exists, run real computation
-        4. Dispatch embedding to InferenceRouter (if available)
-        5. Fall back to generic path for apps 6-125
+        2. Enforce N<=27 concurrency ceiling
+        3. Map category -> dimension -> silicon target
+        4. If foundation handler exists, run real computation
+        5. Dispatch embedding to InferenceRouter (if available)
+        6. Fall back to generic path for apps 6-126
 
         Args:
-            app_name: Name of the IIAS app (e.g., "dimension_router")
+            app_name: Name of the IIAS app
             query: Input query or parameters for the app
 
         Returns:
             AppResult with silicon dispatch data and computed response
         """
+        if self._concurrent >= 27:
+            return AppResult(
+                app_id=0,
+                app_name=app_name,
+                category="queued",
+                dimension=7,
+                dimension_name="REASONING",
+                silicon_target="CPU",
+                response="Queued: 27-agent ceiling reached",
+                success=False,
+            )
+
+        self._concurrent += 1
+        try:
+            return await self._dispatch(app_name, query)
+        finally:
+            self._concurrent -= 1
+
+    async def _dispatch(
+        self,
+        app_name: str,
+        query: str = "",
+    ) -> AppResult:
+        """Internal dispatch after concurrency check."""
         app = self.registry.get_by_name(app_name)
         if app is None:
             return AppResult(

@@ -11,13 +11,15 @@ Features:
 - Plan deduplication via hashing
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Any, Set
 from enum import Enum
 from pathlib import Path
+from typing import Any
 
 
 class TaskStatus(Enum):
@@ -37,15 +39,15 @@ class Task:
     name: str
     description: str
     action: str  # The action to perform
-    dependencies: List[str] = field(default_factory=list)  # Task IDs
+    dependencies: list[str] = field(default_factory=list)  # Task IDs
     status: TaskStatus = TaskStatus.PENDING
-    result: Optional[Any] = None
-    error: Optional[str] = None
+    result: Any | None = None
+    error: str | None = None
 
     # Metadata
     estimated_cost: str = "low"  # low, medium, high
     requires_approval: bool = False
-    tags: List[str] = field(default_factory=list)
+    tags: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
         return {
@@ -66,25 +68,28 @@ class ExecutionPlan:
     id: str
     name: str
     description: str
-    tasks: List[Task] = field(default_factory=list)
+    tasks: list[Task] = field(default_factory=list)
     created_at: float = field(default_factory=time.time)
     approved: bool = False
-    approved_at: Optional[float] = None
+    approved_at: float | None = None
 
     def add_task(self, task: Task):
         """Add a task to the plan."""
         self.tasks.append(task)
 
-    def get_task(self, task_id: str) -> Optional[Task]:
+    def get_task(self, task_id: str) -> Task | None:
         """Get a task by ID."""
         for task in self.tasks:
             if task.id == task_id:
                 return task
         return None
 
-    def get_ready_tasks(self) -> List[Task]:
-        """Get tasks that are ready to execute (all deps completed)."""
-        completed_ids = {t.id for t in self.tasks if t.status == TaskStatus.COMPLETED}
+    def get_ready_tasks(self) -> list[Task]:
+        """Get tasks ready to execute (all deps completed)."""
+        completed_ids = {
+            t.id for t in self.tasks
+            if t.status == TaskStatus.COMPLETED
+        }
 
         ready = []
         for task in self.tasks:
@@ -127,14 +132,16 @@ class ExecutionPlan:
         for task in self.tasks:
             # Node
             status_icon = {
-                TaskStatus.PENDING: "⏳",
-                TaskStatus.APPROVED: "✅",
-                TaskStatus.RUNNING: "🔄",
-                TaskStatus.COMPLETED: "✓",
-                TaskStatus.FAILED: "❌",
-                TaskStatus.SKIPPED: "⏭",
+                TaskStatus.PENDING: "wait",
+                TaskStatus.APPROVED: "ok",
+                TaskStatus.RUNNING: "run",
+                TaskStatus.COMPLETED: "done",
+                TaskStatus.FAILED: "fail",
+                TaskStatus.SKIPPED: "skip",
             }.get(task.status, "")
-            lines.append(f'    {task.id}["{status_icon} {task.name}"]')
+            lines.append(
+                f'    {task.id}["{status_icon} {task.name}"]'
+            )
 
             # Edges
             for dep in task.dependencies:
@@ -166,7 +173,7 @@ class DAGPlanner:
     """
 
     # Common task patterns
-    PATTERNS = {
+    PATTERNS: dict[str, list[tuple[str, str, str]]] = {
         "organize": [
             ("scan", "Scan directory contents", "list_files"),
             ("analyze", "Analyze file types", "categorize_files"),
@@ -185,16 +192,22 @@ class DAGPlanner:
             ("package", "Create deployment package", "create_package"),
             ("deploy", "Deploy to target", "deploy_package"),
         ],
+        "constraint": [
+            ("validate", "Validate N <= 27 agent ceiling", "check_concurrency"),
+            ("assign_scales", "Assign Brahim scales to task pairs", "quantize_scales"),
+            ("dispatch", "Dispatch independent agents (f=0)", "parallel_dispatch"),
+            ("audit", "Verify product invariant phi^(-214)", "audit_conservation"),
+        ],
     }
 
     def __init__(
         self,
         max_depth: int = 1,
-        approval_gate_path: Optional[Path] = None,
+        approval_gate_path: Path | None = None,
     ):
         self.max_depth = max_depth
         self.approval_gate_path = approval_gate_path
-        self.plans: Dict[str, ExecutionPlan] = {}
+        self.plans: dict[str, ExecutionPlan] = {}
 
         # Statistics
         self.total_plans = 0
@@ -203,7 +216,7 @@ class DAGPlanner:
     def plan(
         self,
         request: str,
-        context: Optional[Dict[str, Any]] = None,
+        context: dict[str, Any] | None = None,
     ) -> ExecutionPlan:
         """
         Create an execution plan for a request.
@@ -270,8 +283,8 @@ class DAGPlanner:
     def _decompose_generic(
         self,
         request: str,
-        context: Optional[Dict[str, Any]],
-    ) -> List[tuple]:
+        context: dict[str, Any] | None,
+    ) -> list[tuple]:
         """Generic task decomposition."""
         # Simple heuristic decomposition
         return [
@@ -281,7 +294,7 @@ class DAGPlanner:
             ("verify", "Verify results", "verify_results"),
         ]
 
-    def get_plan(self, plan_id: str) -> Optional[ExecutionPlan]:
+    def get_plan(self, plan_id: str) -> ExecutionPlan | None:
         """Get a plan by ID."""
         return self.plans.get(plan_id)
 
@@ -308,6 +321,8 @@ class DAGPlanner:
 
     def _write_approval(self, plan: ExecutionPlan):
         """Write approval to gate file."""
+        if self.approval_gate_path is None:
+            return
         self.approval_gate_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.approval_gate_path, "w") as f:
             json.dump({
@@ -367,7 +382,53 @@ class DAGPlanner:
         task.error = error
         return True
 
-    def stats(self) -> Dict[str, Any]:
+    def validate_plan_concurrency(
+        self, plan_id: str,
+    ) -> dict[str, Any]:
+        """Check that plan has <= 27 concurrent tasks at any point.
+
+        Walks the DAG and computes the maximum parallel width
+        (max tasks in any layer that can execute concurrently).
+        """
+        plan = self.get_plan(plan_id)
+        if plan is None:
+            return {"error": f"Plan {plan_id} not found"}
+
+        # Build adjacency: task -> set of tasks it depends on
+        dep_map: dict[str, set[str]] = {
+            t.id: set(t.dependencies) for t in plan.tasks
+        }
+
+        # Compute topological layers (Kahn-style)
+        layers: list[list[str]] = []
+        remaining = dict(dep_map)
+        placed: set[str] = set()
+        while remaining:
+            layer = [
+                tid for tid, deps in remaining.items()
+                if deps <= placed
+            ]
+            if not layer:
+                break  # cycle guard
+            layers.append(layer)
+            placed.update(layer)
+            for tid in layer:
+                del remaining[tid]
+
+        max_width = (
+            max(len(lyr) for lyr in layers) if layers else 0
+        )
+        ceiling = 27
+        return {
+            "plan_id": plan_id,
+            "valid": max_width <= ceiling,
+            "max_concurrent": max_width,
+            "ceiling": ceiling,
+            "scales_available": 369,
+            "layers": len(layers),
+        }
+
+    def stats(self) -> dict[str, Any]:
         """Get planner statistics."""
         return {
             "total_plans": self.total_plans,

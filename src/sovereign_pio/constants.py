@@ -29,6 +29,17 @@ BRANCH_SPACING = 2 * pi / log(PHI)
 # When z = i, D_k(i) is purely imaginary for all k.
 AXIOM_A6 = 107 / 214  # = 0.5 exactly
 
+# N-Body Manifold constants (DOI: 10.5281/zenodo.18437705)
+BRAHIM_NUMBERS = (27, 42, 60, 75, 97, 117, 139, 154, 172, 187)
+MIRROR_CONSTANT = 214
+BRAHIM_CENTER = 107
+BRAHIM_SUM = 1070
+GENERATING_TRIANGLE = (42, 75, 97)
+MAX_CONCURRENT_AGENTS = 27        # C(27,2)=351 <= 369 < 378=C(28,2)
+TOTAL_BRAHIM_SCALES = 369         # distinct non-empty subset sums
+PRODUCT_INVARIANT_EXPONENT = 214  # phi^(-214) = product of triangle scales
+TRIANGLE_SILICON = {"NPU": 42, "CPU": 75, "GPU": 97}
+
 # Lucas Numbers for dimension capacity
 LUCAS_NUMBERS = [1, 3, 4, 7, 11, 18, 29, 47, 76, 123, 199, 322]
 TOTAL_STATES = sum(LUCAS_NUMBERS)  # 840
