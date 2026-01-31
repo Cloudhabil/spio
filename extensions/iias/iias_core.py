@@ -536,40 +536,40 @@ INFRASTRUCTURE_APPS = [
     IIASApp(6, "auto_scaler", "infrastructure", "done", "cloud", "Auto-scales resources"),
     IIASApp(7, "load_balancer", "infrastructure", "done", "cloud", "Balances load across nodes"),
     IIASApp(8, "cost_optimizer", "infrastructure", "done", "cloud", "Optimizes cloud costs"),
-    IIASApp(9, "api_gateway", "infrastructure", "pending", "cloud", "API gateway routing"),
-    IIASApp(10, "training_scheduler", "infrastructure", "pending", "cloud", "Schedules ML training"),
-    IIASApp(11, "cold_start_predictor", "infrastructure", "pending", "cloud", "Predicts cold starts"),
-    IIASApp(12, "container_orchestrator", "infrastructure", "pending", "cloud", "Container orchestration"),
-    IIASApp(13, "database_sharding", "infrastructure", "pending", "cloud", "Database sharding"),
-    IIASApp(14, "cdn_router", "infrastructure", "pending", "cloud", "CDN routing"),
-    IIASApp(15, "queue_manager", "infrastructure", "pending", "cloud", "Message queue management"),
+    IIASApp(9, "api_gateway", "infrastructure", "done", "cloud", "API gateway routing"),
+    IIASApp(10, "training_scheduler", "infrastructure", "done", "cloud", "Schedules ML training"),
+    IIASApp(11, "cold_start_predictor", "infrastructure", "done", "cloud", "Predicts cold starts"),
+    IIASApp(12, "container_orchestrator", "infrastructure", "done", "cloud", "Container orchestration"),
+    IIASApp(13, "database_sharding", "infrastructure", "done", "cloud", "Database sharding"),
+    IIASApp(14, "cdn_router", "infrastructure", "done", "cloud", "CDN routing"),
+    IIASApp(15, "queue_manager", "infrastructure", "done", "cloud", "Message queue management"),
 ]
 
 # Edge apps (10)
 EDGE_APPS = [
-    IIASApp(16, "edge_ai_router", "edge", "pending", "edge", "Edge AI model routing"),
-    IIASApp(17, "hybrid_orchestrator", "edge", "pending", "edge", "Hybrid cloud-edge orchestration"),
+    IIASApp(16, "edge_ai_router", "edge", "done", "edge", "Edge AI model routing"),
+    IIASApp(17, "hybrid_orchestrator", "edge", "done", "edge", "Hybrid cloud-edge orchestration"),
     IIASApp(18, "battery_manager", "edge", "done", "edge", "Battery optimization"),
     IIASApp(19, "offline_cache", "edge", "done", "edge", "Offline data caching"),
     IIASApp(20, "realtime_pipeline", "edge", "done", "edge", "Real-time data pipeline"),
-    IIASApp(21, "privacy_isolator", "edge", "pending", "edge", "Privacy-preserving isolation"),
+    IIASApp(21, "privacy_isolator", "edge", "done", "edge", "Privacy-preserving isolation"),
     IIASApp(22, "thermal_manager", "edge", "done", "edge", "Thermal management"),
-    IIASApp(23, "wake_controller", "edge", "pending", "edge", "Wake/sleep control"),
-    IIASApp(24, "sensor_fusion", "edge", "pending", "edge", "Sensor data fusion"),
-    IIASApp(25, "local_model_selector", "edge", "pending", "edge", "Local model selection"),
+    IIASApp(23, "wake_controller", "edge", "done", "edge", "Wake/sleep control"),
+    IIASApp(24, "sensor_fusion", "edge", "done", "edge", "Sensor data fusion"),
+    IIASApp(25, "local_model_selector", "edge", "done", "edge", "Local model selection"),
 ]
 
 # AI/ML apps (10)
 AI_ML_APPS = [
     IIASApp(26, "inference_router", "ai_ml", "done", "ai", "ML inference routing"),
-    IIASApp(27, "model_quantizer", "ai_ml", "pending", "ai", "Model quantization"),
+    IIASApp(27, "model_quantizer", "ai_ml", "done", "ai", "Model quantization"),
     IIASApp(28, "attention_allocator", "ai_ml", "done", "ai", "Attention budget allocation"),
     IIASApp(29, "context_manager", "ai_ml", "done", "ai", "Context window management"),
-    IIASApp(30, "embedding_router", "ai_ml", "pending", "ai", "Embedding vector routing"),
-    IIASApp(31, "finetune_scheduler", "ai_ml", "pending", "ai", "Fine-tuning scheduler"),
-    IIASApp(32, "prompt_optimizer", "ai_ml", "pending", "ai", "Prompt optimization"),
-    IIASApp(33, "multi_model_mixer", "ai_ml", "pending", "ai", "Multi-model mixing"),
-    IIASApp(34, "rag_router", "ai_ml", "pending", "ai", "RAG pipeline routing"),
+    IIASApp(30, "embedding_router", "ai_ml", "done", "ai", "Embedding vector routing"),
+    IIASApp(31, "finetune_scheduler", "ai_ml", "done", "ai", "Fine-tuning scheduler"),
+    IIASApp(32, "prompt_optimizer", "ai_ml", "done", "ai", "Prompt optimization"),
+    IIASApp(33, "multi_model_mixer", "ai_ml", "done", "ai", "Multi-model mixing"),
+    IIASApp(34, "rag_router", "ai_ml", "done", "ai", "RAG pipeline routing"),
     IIASApp(35, "agent_coordinator", "ai_ml", "done", "ai", "Agent coordination"),
 ]
 
@@ -577,14 +577,14 @@ AI_ML_APPS = [
 SECURITY_APPS = [
     IIASApp(36, "threat_classifier", "security", "done", "security", "Threat classification"),
     IIASApp(37, "access_controller", "security", "done", "security", "Access control"),
-    IIASApp(38, "encryption_router", "security", "pending", "security", "Encryption routing"),
+    IIASApp(38, "encryption_router", "security", "done", "security", "Encryption routing"),
     IIASApp(39, "anomaly_detector", "security", "done", "security", "Anomaly detection"),
-    IIASApp(40, "audit_logger", "security", "pending", "security", "Audit logging"),
-    IIASApp(41, "zero_trust_gateway", "security", "pending", "security", "Zero-trust gateway"),
+    IIASApp(40, "audit_logger", "security", "done", "security", "Audit logging"),
+    IIASApp(41, "zero_trust_gateway", "security", "done", "security", "Zero-trust gateway"),
     IIASApp(42, "rate_limiter", "security", "done", "security", "Rate limiting"),
-    IIASApp(43, "firewall_router", "security", "pending", "security", "Firewall routing"),
-    IIASApp(44, "secret_manager", "security", "pending", "security", "Secret management"),
-    IIASApp(45, "compliance_checker", "security", "pending", "security", "Compliance checking"),
+    IIASApp(43, "firewall_router", "security", "done", "security", "Firewall routing"),
+    IIASApp(44, "secret_manager", "security", "done", "security", "Secret management"),
+    IIASApp(45, "compliance_checker", "security", "done", "security", "Compliance checking"),
 ]
 
 # Business apps (10)
@@ -592,13 +592,13 @@ BUSINESS_APPS = [
     IIASApp(46, "resource_allocator", "business", "done", "business", "Resource allocation"),
     IIASApp(47, "task_scheduler", "business", "done", "business", "Task scheduling"),
     IIASApp(48, "billing_calculator", "business", "done", "business", "Billing calculation"),
-    IIASApp(49, "demand_forecaster", "business", "pending", "business", "Demand forecasting"),
-    IIASApp(50, "capacity_planner", "business", "pending", "business", "Capacity planning"),
+    IIASApp(49, "demand_forecaster", "business", "done", "business", "Demand forecasting"),
+    IIASApp(50, "capacity_planner", "business", "done", "business", "Capacity planning"),
     IIASApp(51, "sla_monitor", "business", "done", "business", "SLA monitoring"),
-    IIASApp(52, "workflow_optimizer", "business", "pending", "business", "Workflow optimization"),
-    IIASApp(53, "priority_ranker", "business", "pending", "business", "Priority ranking"),
-    IIASApp(54, "resource_forecaster", "business", "pending", "business", "Resource forecasting"),
-    IIASApp(55, "cost_allocator", "business", "pending", "business", "Cost allocation"),
+    IIASApp(52, "workflow_optimizer", "business", "done", "business", "Workflow optimization"),
+    IIASApp(53, "priority_ranker", "business", "done", "business", "Priority ranking"),
+    IIASApp(54, "resource_forecaster", "business", "done", "business", "Resource forecasting"),
+    IIASApp(55, "cost_allocator", "business", "done", "business", "Cost allocation"),
 ]
 
 # Data apps (10)
@@ -607,12 +607,12 @@ DATA_APPS = [
     IIASApp(57, "backup_scheduler", "data", "done", "data", "Backup scheduling"),
     IIASApp(58, "cache_invalidator", "data", "done", "data", "Cache invalidation"),
     IIASApp(59, "replication_manager", "data", "done", "data", "Data replication"),
-    IIASApp(60, "compression_engine", "data", "pending", "data", "Data compression"),
-    IIASApp(61, "migration_planner", "data", "pending", "data", "Data migration"),
-    IIASApp(62, "retention_manager", "data", "pending", "data", "Data retention"),
-    IIASApp(63, "indexer", "data", "pending", "data", "Data indexing"),
-    IIASApp(64, "partitioner", "data", "pending", "data", "Data partitioning"),
-    IIASApp(65, "archiver", "data", "pending", "data", "Data archiving"),
+    IIASApp(60, "data_compressor", "data", "done", "data", "Data compression"),
+    IIASApp(61, "migration_planner", "data", "done", "data", "Data migration"),
+    IIASApp(62, "retention_manager", "data", "done", "data", "Data retention"),
+    IIASApp(63, "indexer", "data", "done", "data", "Data indexing"),
+    IIASApp(64, "partitioner", "data", "done", "data", "Data partitioning"),
+    IIASApp(65, "archiver", "data", "done", "data", "Data archiving"),
 ]
 
 # IoT apps (10)
@@ -621,12 +621,12 @@ IOT_APPS = [
     IIASApp(67, "firmware_updater", "iot", "done", "iot", "Firmware updates"),
     IIASApp(68, "telemetry_collector", "iot", "done", "iot", "Telemetry collection"),
     IIASApp(69, "power_manager", "iot", "done", "iot", "Power management"),
-    IIASApp(70, "protocol_adapter", "iot", "pending", "iot", "Protocol adaptation"),
-    IIASApp(71, "mesh_router", "iot", "pending", "iot", "Mesh network routing"),
-    IIASApp(72, "calibration_scheduler", "iot", "pending", "iot", "Calibration scheduling"),
-    IIASApp(73, "iot_anomaly_detector", "iot", "pending", "iot", "IoT anomaly detection"),
-    IIASApp(74, "edge_aggregator", "iot", "pending", "iot", "Edge aggregation"),
-    IIASApp(75, "fleet_manager", "iot", "pending", "iot", "Device fleet management"),
+    IIASApp(70, "protocol_adapter", "iot", "done", "iot", "Protocol adaptation"),
+    IIASApp(71, "mesh_router", "iot", "done", "iot", "Mesh network routing"),
+    IIASApp(72, "calibration_scheduler", "iot", "done", "iot", "Calibration scheduling"),
+    IIASApp(73, "iot_anomaly_detector", "iot", "done", "iot", "IoT anomaly detection"),
+    IIASApp(74, "edge_aggregator", "iot", "done", "iot", "Edge aggregation"),
+    IIASApp(75, "fleet_manager", "iot", "done", "iot", "Device fleet management"),
 ]
 
 # Communication apps (10)
@@ -635,12 +635,12 @@ COMMUNICATION_APPS = [
     IIASApp(77, "protocol_selector", "communication", "done", "comm", "Protocol selection"),
     IIASApp(78, "sync_manager", "communication", "done", "comm", "Sync management"),
     IIASApp(79, "compression_engine", "communication", "done", "comm", "Communication compression"),
-    IIASApp(80, "notification_router", "communication", "pending", "comm", "Notification routing"),
-    IIASApp(81, "channel_selector", "communication", "pending", "comm", "Channel selection"),
-    IIASApp(82, "presence_manager", "communication", "pending", "comm", "Presence management"),
-    IIASApp(83, "translation_router", "communication", "pending", "comm", "Translation routing"),
-    IIASApp(84, "media_transcoder", "communication", "pending", "comm", "Media transcoding"),
-    IIASApp(85, "webhook_manager", "communication", "pending", "comm", "Webhook management"),
+    IIASApp(80, "notification_router", "communication", "done", "comm", "Notification routing"),
+    IIASApp(81, "channel_selector", "communication", "done", "comm", "Channel selection"),
+    IIASApp(82, "presence_manager", "communication", "done", "comm", "Presence management"),
+    IIASApp(83, "translation_router", "communication", "done", "comm", "Translation routing"),
+    IIASApp(84, "media_transcoder", "communication", "done", "comm", "Media transcoding"),
+    IIASApp(85, "webhook_manager", "communication", "done", "comm", "Webhook management"),
 ]
 
 # Developer apps (10)
@@ -649,12 +649,12 @@ DEVELOPER_APPS = [
     IIASApp(87, "test_scheduler", "developer", "done", "dev", "Test scheduling"),
     IIASApp(88, "feature_flagger", "developer", "done", "dev", "Feature flags"),
     IIASApp(89, "metric_collector", "developer", "done", "dev", "Metric collection"),
-    IIASApp(90, "code_analyzer", "developer", "pending", "dev", "Code analysis"),
-    IIASApp(91, "dependency_resolver", "developer", "pending", "dev", "Dependency resolution"),
-    IIASApp(92, "version_manager", "developer", "pending", "dev", "Version management"),
-    IIASApp(93, "ci_optimizer", "developer", "pending", "dev", "CI/CD optimization"),
-    IIASApp(94, "doc_generator", "developer", "pending", "dev", "Documentation generation"),
-    IIASApp(95, "perf_profiler", "developer", "pending", "dev", "Performance profiling"),
+    IIASApp(90, "code_analyzer", "developer", "done", "dev", "Code analysis"),
+    IIASApp(91, "dependency_resolver", "developer", "done", "dev", "Dependency resolution"),
+    IIASApp(92, "version_manager", "developer", "done", "dev", "Version management"),
+    IIASApp(93, "ci_optimizer", "developer", "done", "dev", "CI/CD optimization"),
+    IIASApp(94, "doc_generator", "developer", "done", "dev", "Documentation generation"),
+    IIASApp(95, "perf_profiler", "developer", "done", "dev", "Performance profiling"),
 ]
 
 # Scientific apps (10)
@@ -663,12 +663,12 @@ SCIENTIFIC_APPS = [
     IIASApp(97, "experiment_scheduler", "scientific", "done", "sci", "Experiment scheduling"),
     IIASApp(98, "hypothesis_ranker", "scientific", "done", "sci", "Hypothesis ranking"),
     IIASApp(99, "dataset_sampler", "scientific", "done", "sci", "Dataset sampling"),
-    IIASApp(100, "visualization_engine", "scientific", "pending", "sci", "Visualization"),
-    IIASApp(101, "statistical_analyzer", "scientific", "pending", "sci", "Statistical analysis"),
-    IIASApp(102, "model_validator", "scientific", "pending", "sci", "Model validation"),
-    IIASApp(103, "result_aggregator", "scientific", "pending", "sci", "Result aggregation"),
-    IIASApp(104, "literature_scanner", "scientific", "pending", "sci", "Literature scanning"),
-    IIASApp(105, "citation_tracker", "scientific", "pending", "sci", "Citation tracking"),
+    IIASApp(100, "visualization_engine", "scientific", "done", "sci", "Visualization"),
+    IIASApp(101, "statistical_analyzer", "scientific", "done", "sci", "Statistical analysis"),
+    IIASApp(102, "model_validator", "scientific", "done", "sci", "Model validation"),
+    IIASApp(103, "result_aggregator", "scientific", "done", "sci", "Result aggregation"),
+    IIASApp(104, "literature_scanner", "scientific", "done", "sci", "Literature scanning"),
+    IIASApp(105, "citation_tracker", "scientific", "done", "sci", "Citation tracking"),
 ]
 
 # Personal apps (10)
@@ -677,12 +677,12 @@ PERSONAL_APPS = [
     IIASApp(107, "habit_tracker", "personal", "done", "personal", "Habit tracking"),
     IIASApp(108, "learning_planner", "personal", "done", "personal", "Learning planning"),
     IIASApp(109, "goal_tracker", "personal", "done", "personal", "Goal tracking"),
-    IIASApp(110, "time_optimizer", "personal", "pending", "personal", "Time optimization"),
-    IIASApp(111, "energy_tracker", "personal", "pending", "personal", "Energy tracking"),
-    IIASApp(112, "mood_analyzer", "personal", "pending", "personal", "Mood analysis"),
-    IIASApp(113, "routine_optimizer", "personal", "pending", "personal", "Routine optimization"),
-    IIASApp(114, "productivity_scorer", "personal", "pending", "personal", "Productivity scoring"),
-    IIASApp(115, "wellness_monitor", "personal", "pending", "personal", "Wellness monitoring"),
+    IIASApp(110, "time_optimizer", "personal", "done", "personal", "Time optimization"),
+    IIASApp(111, "energy_tracker", "personal", "done", "personal", "Energy tracking"),
+    IIASApp(112, "mood_analyzer", "personal", "done", "personal", "Mood analysis"),
+    IIASApp(113, "routine_optimizer", "personal", "done", "personal", "Routine optimization"),
+    IIASApp(114, "productivity_scorer", "personal", "done", "personal", "Productivity scoring"),
+    IIASApp(115, "wellness_monitor", "personal", "done", "personal", "Wellness monitoring"),
 ]
 
 # Finance apps (10)
@@ -691,12 +691,12 @@ FINANCE_APPS = [
     IIASApp(117, "risk_calculator", "finance", "done", "finance", "Risk calculation"),
     IIASApp(118, "budget_allocator", "finance", "done", "finance", "Budget allocation"),
     IIASApp(119, "trade_router", "finance", "done", "finance", "Trade routing"),
-    IIASApp(120, "tax_optimizer", "finance", "pending", "finance", "Tax optimization"),
-    IIASApp(121, "expense_tracker", "finance", "pending", "finance", "Expense tracking"),
-    IIASApp(122, "investment_analyzer", "finance", "pending", "finance", "Investment analysis"),
-    IIASApp(123, "cashflow_predictor", "finance", "pending", "finance", "Cashflow prediction"),
-    IIASApp(124, "fraud_detector", "finance", "pending", "finance", "Fraud detection"),
-    IIASApp(125, "compliance_monitor", "finance", "pending", "finance", "Compliance monitoring"),
+    IIASApp(120, "tax_optimizer", "finance", "done", "finance", "Tax optimization"),
+    IIASApp(121, "expense_tracker", "finance", "done", "finance", "Expense tracking"),
+    IIASApp(122, "investment_analyzer", "finance", "done", "finance", "Investment analysis"),
+    IIASApp(123, "cashflow_predictor", "finance", "done", "finance", "Cashflow prediction"),
+    IIASApp(124, "fraud_detector", "finance", "done", "finance", "Fraud detection"),
+    IIASApp(125, "compliance_monitor", "finance", "done", "finance", "Compliance monitoring"),
 ]
 
 # All apps combined
@@ -1271,6 +1271,16 @@ FOUNDATION_HANDLERS: dict[str, Any] = {
     "nbody_constraint_router": _handle_nbody_router,
 }
 
+# ---------------------------------------------------------------------------
+# ALL_HANDLERS: Foundation (6) + Category (120) = 126 real handlers
+# ---------------------------------------------------------------------------
+from .iias_handlers import CATEGORY_HANDLERS  # noqa: E402
+
+ALL_HANDLERS: dict[str, Any] = {
+    **FOUNDATION_HANDLERS,
+    **CATEGORY_HANDLERS,
+}
+
 
 class AppExecutor:
     """
@@ -1367,8 +1377,8 @@ class AppExecutor:
         dim_name = DIMENSION_NAMES[dimension]
         silicon_target = DIMENSION_SILICON[dimension]
 
-        # --- Foundation handler path ---
-        handler = FOUNDATION_HANDLERS.get(app_name)
+        # --- Handler path (foundation + category) ---
+        handler = ALL_HANDLERS.get(app_name)
         if handler is not None:
             try:
                 computed = handler(query, self.context)

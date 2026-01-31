@@ -31,6 +31,7 @@ Author: Elias Oulad Brahim
 from .iias_core import (
     AI_ML_APPS,
     ALL_APPS,
+    ALL_HANDLERS,
     BETA,
     BRAHIM_NUMBERS,
     BUSINESS_APPS,
@@ -189,6 +190,7 @@ __all__ = [
     "PERSONAL_APPS",
     "FINANCE_APPS",
     "ALL_APPS",
+    "ALL_HANDLERS",
 
     # Registry
     "AppRegistry",
